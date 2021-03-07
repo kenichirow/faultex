@@ -22,6 +22,7 @@ defmodule Injex.MixProject do
   defp deps do
     [
       {:plug, "~> 1.11"},
+      {:httpoison, "~> 1.8"},
       {:jason, "~> 1.2"}
     ]
   end
