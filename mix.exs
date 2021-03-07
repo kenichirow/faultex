@@ -21,7 +21,8 @@ defmodule Injex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:plug, "~> 1.11"}
+      {:plug, "~> 1.11"},
+      {:jason, "~> 1.2"}
     ]
   end
 end

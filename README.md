@@ -4,19 +4,8 @@ ExFit is simple Plug based fault injection tool.
 
 inspired by Istio
 
-plug ExFit.Plug.Http
-
-
 https://netflixtechblog.com/fit-failure-injection-testing-35d8e2a9bb2k
 
-
-Path based configuration
-
-処理の流れ
-
- Enum.map(failures, &ExFit.matchs?(&1, conn) 
-
-plug ExFit.Plug.Http
 
 ```
    config :ex_fit, 
@@ -41,16 +30,16 @@ plug ExFit.Plug.Http
 
 Faultのパラメータ 
 
-host: エラーにマッチするホスト 基本的に外部サービスとの通信でエラーを起こしたい場合に ExFit.HTTPoison へ渡すFault に使用する 省略可能
-path: エラーにマッチするURLのパターン 省略可能
-methd: エラーにマッチするメソッド 省略可能
-exact: URLの完全一致でのみエラーにする
-headers: エラーにマッチするヘッダー cowboyと同様の tupleのリスト 省略不可能
-status: エラーパターンにマッチした場合に返すhttpステータス
-response: エラーパターンにマッチした場合に返すレスポンス 固定値のみ返せる
-resp_handler: レスポンスを返すmf 引数は１つ(connが渡ってくる) このオプションがある場合はresponseは使われない リクエスト内容に応じたエラーを返したい場合はこれを使う
-percent: パターンにマッチしたリクエストのうち何パーセントをエラーにするか
-delay: レスポンスを返すまでに遅延させる値(ms)
+- host: エラーにマッチするホスト 基本的に外部サービスとの通信でエラーを起こしたい場合に ExFit.HTTPoison へ渡すFault に使用する 省略可能
+- path: エラーにマッチするURLのパターン 省略可能
+- methd: エラーにマッチするメソッド 省略可能
+- exact: URLの完全一致でのみエラーにする
+- headers: エラーにマッチするヘッダー cowboyと同様の tupleのリスト 省略不可能
+- status: エラーパターンにマッチした場合に返すhttpステータス
+- response: エラーパターンにマッチした場合に返すレスポンス 固定値のみ返せる
+- resp_handler: レスポンスを返すmf 引数は１つ(connが渡ってくる) このオプションがある場合はresponseは使われない リクエスト内容に応じたエラーを返したい場合はこれを使う
+- percent: パターンにマッチしたリクエストのうち何パーセントをエラーにするか
+- delay: レスポンスを返すまでに遅延させる値(ms)
 
 
 ## ExFit.Plug
