@@ -21,6 +21,7 @@ defmodule Injex.Plug do
   end
 
   defp send_resp(conn, %Injex{status: status, response: response}) do
-    Plug.Conn.send_resp(conn, status, response)
+    conn = Plug.Conn.send_resp(conn, status, response)
+    conn
   end
 end

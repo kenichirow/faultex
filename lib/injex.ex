@@ -5,6 +5,7 @@ defmodule Injex do
   @before_compile Injex.Matcher
 
   defstruct [
+    :unmatch,
     :id,
     :host,
     :method,
@@ -16,6 +17,23 @@ defmodule Injex do
     :response
   ]
 
+  def match(%HTTPoison.Request{
+        method: method,
+        headers: headers,
+        url: url
+      }) do
+    req_headers = HTTPoison.process_request_headers(headers)
+    method = String.upcase(to_string(method))
+    %{host: host, path: path} = url |> URI.parse()
+
+    path_info =
+      path
+      |> String.split("/")
+      |> Enum.reject(&match?("", &1))
+
+    do_match(host, method, path_info, req_headers)
+  end
+
   def match(%Plug.Conn{} = conn) do
     %{
       host: _host,
@@ -24,7 +42,6 @@ defmodule Injex do
       req_headers: req_headers
     } = conn
 
-    # TODO "*" をどうにかする
     do_match("*", method, path_info, req_headers)
   end
 
@@ -56,51 +73,74 @@ defmodule Injex do
           params_match: params_match,
           response: response
         }
-      end)
+      end) ++
+        [
+          %Injex{
+            id: :pass,
+            unmatch: true
+          }
+        ]
+    end
+
+    def create_matcher_body(_, _, _, _, %Injex{unmatch: true}) do
+      quote location: :keep do
+        def do_match(_host, _method, _, _req_headers) do
+          :pass
+        end
+      end
+    end
+
+    # mathches all host
+    def create_matcher_body("*", method, path_match, headers, config) do
+      quote do
+        def do_match(
+              _,
+              unquote(method),
+              [unquote_splicing(path_match)],
+              req_headers
+            ) do
+          disabled? = Application.get_env(:injex, :disable, false)
+
+          if not disabled? and Enum.any?(req_headers, &match?(unquote(headers), &1)) do
+            unquote(Macro.escape(config))
+          else
+            :pass
+          end
+        end
+      end
+    end
+
+    def create_matcher_body(host, method, path_match, headers, config) do
+      quote do
+        def do_match(
+              unquote(host),
+              unquote(method),
+              [unquote_splicing(path_match)],
+              req_headers
+            ) do
+          disabled? = Application.get_env(:injex, :disable, false)
+
+          if not disabled? and Enum.any?(req_headers, &match?(unquote(headers), &1)) do
+            unquote(Macro.escape(config))
+          else
+            :pass
+          end
+        end
+      end
     end
 
     defmacro __before_compile__(_env) do
-      matchers = build_matchers()
-
-      for config <- matchers do
+      for config <- build_matchers() do
         path_match = config.path_match
         host = config.host
         method = config.method
         headers = config.headers
         config = config
+        create_matcher_body(host, method, path_match, headers, config)
 
-        quote do
-          def do_match(
-                unquote(host),
-                unquote(method),
-                [unquote_splicing(path_match)],
-                req_headers
-              ) do
-            disabled? = Application.get_env(:injex, :disable, false)
-
-            if Enum.any?(req_headers, &match?(unquote(headers), &1)) and not disabled? do
-              unquote(Macro.escape(config))
-            else
-              :pass
-            end
-          end
-
-          # host "*" でのマッチに対応
-          case unquote(host) do
-            "*" ->
-              :ok
-
-            _ ->
-              def do_match(_, unquote(method), [unquote_splicing(path_match)], req_headers) do
-                disabled? = Application.get_env(:injex, :disable, false)
-
-                if Enum.any?(req_headers, &match?(unquote(headers), &1)) and not disabled? do
-                  unquote(Macro.escape(config))
-                else
-                  :pass
-                end
-              end
-          end
+        # host "*" での逆マッチに対応(Plugで必要)
+        if host != "*" do
+          create_matcher_body("*", method, path_match, headers, config)
         end
       end
     end

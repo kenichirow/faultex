@@ -9,8 +9,8 @@ https://netflixtechblog.com/fit-failure-injection-testing-35d8e2a9bb2k
 
 ```
    config :ex_fit, 
-    fault_injection_diable: true,
-    fault: [RegisterFailure, AccessTokenFauilure]
+     fault_injection_diable: true,
+     fault: [RegisterFailure, AccessTokenFauilure]
        
    config :ex_fit, RegisterFailure
      # request matcher(Plug.Connとパターンマッチする)
@@ -79,6 +79,7 @@ plug ExFit.Plug.Http, [
 ## ExFit.HTTPoison
 
 外部へのリクエストをエラーにする場合に使用する
+マッチした場合リクエストは中断されレスポンスのみが返る
 
 ```
 res = ExFit.HTTPoison.request!(:post, path, body, headers)
