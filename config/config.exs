@@ -5,7 +5,7 @@ config :injex,
   failures: [RegisterFailure, GithubFail]
 
 config :injex, RegisterFailure,
-  host: "example.com",
+  host: "*",
   path: "/das/auth/:game_id/:game_env/*path",
   method: "POST",
   exact: true,

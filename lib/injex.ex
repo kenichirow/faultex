@@ -5,7 +5,7 @@ defmodule Injex do
   @before_compile Injex.Matcher
 
   defstruct [
-    :unmatch,
+    :pass,
     :id,
     :host,
     :method,
@@ -16,34 +16,6 @@ defmodule Injex do
     :params_match,
     :response
   ]
-
-  def match(%HTTPoison.Request{
-        method: method,
-        headers: headers,
-        url: url
-      }) do
-    req_headers = HTTPoison.process_request_headers(headers)
-    method = String.upcase(to_string(method))
-    %{host: host, path: path} = url |> URI.parse()
-
-    path_info =
-      path
-      |> String.split("/")
-      |> Enum.reject(&match?("", &1))
-
-    do_match(host, method, path_info, req_headers)
-  end
-
-  def match(%Plug.Conn{} = conn) do
-    %{
-      host: _host,
-      method: method,
-      path_info: path_info,
-      req_headers: req_headers
-    } = conn
-
-    do_match("*", method, path_info, req_headers)
-  end
 
   defmodule Matcher do
     defp build_matchers() do
@@ -76,44 +48,31 @@ defmodule Injex do
       end) ++
         [
           %Injex{
-            id: :pass,
-            unmatch: true
+            pass: true
           }
         ]
     end
 
-    def create_matcher_body(_, _, _, _, %Injex{unmatch: true}) do
-      quote location: :keep do
-        def do_match(_host, _method, _, _req_headers) do
-          :pass
-        end
-      end
+    defp wildcard_to_underscore("*") do
+      quote do: _
     end
 
-    # mathches all host
-    def create_matcher_body("*", method, path_match, headers, config) do
-      quote do
-        def do_match(
-              _,
-              unquote(method),
-              [unquote_splicing(path_match)],
-              req_headers
-            ) do
-          disabled? = Application.get_env(:injex, :disable, false)
+    defp wildcard_to_underscore(any) do
+      any
+    end
 
-          if not disabled? and Enum.any?(req_headers, &match?(unquote(headers), &1)) do
-            unquote(Macro.escape(config))
-          else
-            :pass
-          end
+    def create_matcher_body(_, _, _, _, %Injex{pass: true}) do
+      quote location: :keep do
+        def match(_host, _method, _, _req_headers) do
+          :pass
         end
       end
     end
 
     def create_matcher_body(host, method, path_match, headers, config) do
       quote do
-        def do_match(
-              unquote(host),
+        def match(
+              unquote(wildcard_to_underscore(host)),
               unquote(method),
               [unquote_splicing(path_match)],
               req_headers
@@ -131,17 +90,15 @@ defmodule Injex do
 
     defmacro __before_compile__(_env) do
       for config <- build_matchers() do
-        path_match = config.path_match
-        host = config.host
-        method = config.method
-        headers = config.headers
+        %{
+          host: host,
+          method: method,
+          path_match: path_match,
+          headers: headers
+        } = config
+
         config = config
         create_matcher_body(host, method, path_match, headers, config)
-
-        # host "*" での逆マッチに対応(Plugで必要)
-        if host != "*" do
-          create_matcher_body("*", method, path_match, headers, config)
-        end
       end
     end
   end

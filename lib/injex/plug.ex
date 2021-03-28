@@ -11,17 +11,23 @@ defmodule Injex.Plug do
 
   @impl Plug
   def call(conn, _opts) do
-    case Injex.match(conn) do
-      %Injex{} = resp ->
-        send_resp(conn, resp)
+    case match(conn) do
+      %Injex{status: status, response: response} ->
+        Plug.Conn.send_resp(conn, status, response)
 
       :pass ->
         conn
     end
   end
 
-  defp send_resp(conn, %Injex{status: status, response: response}) do
-    conn = Plug.Conn.send_resp(conn, status, response)
-    conn
+  def match(%Plug.Conn{} = conn) do
+    %{
+      host: _host,
+      method: method,
+      path_info: path_info,
+      req_headers: req_headers
+    } = conn
+
+    Injex.match("*", method, path_info, req_headers)
   end
 end
