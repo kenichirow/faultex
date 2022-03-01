@@ -18,10 +18,10 @@ defmodule Injex do
   ]
 
   defmodule Matcher do
+    # Generate struct for pattern match from config.exs
     defp build_matchers() do
       failures = Application.get_env(:injex, :failures, [])
 
-      # before_sendのタイミングでレスポンスを返すようにする？
       Enum.map(failures, fn id ->
         config = Application.fetch_env!(:injex, id)
         path = Keyword.get(config, :path, "*")
@@ -43,7 +43,8 @@ defmodule Injex do
           vars: vars,
           headers: headers,
           params_match: params_match,
-          response: response
+          response: response,
+          pass: false
         }
       end) ++
         [
@@ -73,7 +74,7 @@ defmodule Injex do
       quote do
         def match(
               unquote(wildcard_to_underscore(host)),
-              unquote(method),
+              unquote(wildcard_to_underscore(method)),
               [unquote_splicing(path_match)],
               req_headers
             ) do

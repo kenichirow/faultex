@@ -4,22 +4,20 @@ ExFit is a simple Plug based fault injection tool.
 
 ![example workflow](https://github.com/kenichirow/ex_fit/actions/workflows/main.yml/badge.svg)
 
-
-
 ```
    config :ex_fit, 
      fault_injection_diable: true,
      fault: [RegisterFailure, AccessTokenFauilure]
        
    config :ex_fit, RegisterFailure
-     # request matcher(Plug.Connとパターンマッチする)
+     # request matcher parameters
      host: "example.com"
      path: "/das/auth/*/*/register",
      method: "POST",
      exact: true,
-     headers: [{"X-Nativebase-Fault-Inject", "das-auth-failed"}],
+     headers: [{"X-Fault-Inject", "auth-failed"}],
 
-     # response
+     # response matcher parameters
      percent: 100,
      status: 401,
      resp_handler: {MyApp.FailureHandler, 1},
