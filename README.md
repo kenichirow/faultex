@@ -1,10 +1,9 @@
 # ExFit
 
-ExFit is simple Plug based fault injection tool.
+ExFit is a simple Plug based fault injection tool.
 
-inspired by Istio
+![example workflow](https://github.com/kenichirow/ex_fit/actions/workflows/main.yml/badge.svg)
 
-https://netflixtechblog.com/fit-failure-injection-testing-35d8e2a9bb2k
 
 
 ```
