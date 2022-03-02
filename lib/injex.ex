@@ -9,12 +9,15 @@ defmodule Injex do
     :id,
     :host,
     :method,
-    :status,
     :path_match,
     :vars,
     :headers,
-    :params_match,
-    :response
+    :percent,
+    :resp_status,
+    :resp_headers,
+    :resp_body,
+    :resp_delay,
+    :params_match
   ]
 
   defmodule Matcher do
@@ -24,12 +27,17 @@ defmodule Injex do
 
       Enum.map(failures, fn id ->
         config = Application.fetch_env!(:injex, id)
+
         path = Keyword.get(config, :path, "*")
         host = Keyword.get(config, :host, "*")
         method = Keyword.get(config, :method, "GET")
-        response = Keyword.get(config, :response, "")
-        status = Keyword.get(config, :status, 200)
-        headers = Keyword.get(config, :header, [])
+        headers = Keyword.get(config, :headers, [])
+        percent = Keyword.get(config, :percent, 100)
+
+        resp_body = Keyword.get(config, :resp_body, "")
+        resp_status = Keyword.get(config, :resp_status, 200)
+        resp_headers = Keyword.get(config, :resp_headers, [])
+        resp_delay = Keyword.get(config, :resp_delay, 0)
 
         {vars, path_match} = Plug.Router.Utils.build_path_match(path)
         params_match = Plug.Router.Utils.build_path_params_match(vars)
@@ -38,12 +46,15 @@ defmodule Injex do
           id: id,
           host: host,
           method: method,
-          status: status,
           path_match: path_match,
-          vars: vars,
+          percent: percent,
           headers: headers,
+          resp_status: resp_status,
+          resp_body: resp_body,
+          resp_headers: resp_headers,
+          resp_delay: resp_delay,
           params_match: params_match,
-          response: response,
+          vars: vars,
           pass: false
         }
       end) ++

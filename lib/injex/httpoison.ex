@@ -13,14 +13,14 @@ defmodule Injex.HTTPoison do
     }
 
     case match(request) do
-      %Injex{response: response, status: status} ->
+      %Injex{resp_status: resp_status, resp_body: resp_body} ->
         {:ok,
          %HTTPoison.Response{
-           body: response,
+           body: resp_body,
            headers: [],
            request: request,
            request_url: url,
-           status_code: status
+           status_code: resp_status
          }}
 
       :pass ->

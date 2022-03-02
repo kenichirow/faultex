@@ -12,8 +12,8 @@ defmodule Injex.Plug do
   @impl Plug
   def call(conn, _opts) do
     case match(conn) do
-      %Injex{status: status, response: response} ->
-        Plug.Conn.send_resp(conn, status, response)
+      %Injex{resp_status: resp_status, resp_body: resp_body} ->
+        Plug.Conn.send_resp(conn, resp_status, resp_body)
 
       :pass ->
         conn
