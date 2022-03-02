@@ -1,6 +1,6 @@
 # ex_fit
 
-ExFit is a simple Plug based fault injection tool.
+ExFit is a simple Elixir fault injection library.
 
 ![ci](https://github.com/kenichirow/ex_fit/actions/workflows/main.yml/badge.svg)
 
@@ -26,8 +26,13 @@ ExFit is a simple Plug based fault injection tool.
      resp_delay: 1000
 ```
 
-Injector のパラメータ 
+### Global parameters
 
+- disable disable all injectors
+- injectors list of injectors 
+
+### Match parameters
+- disable disable this injectors
 - host: エラーにマッチするホスト 基本的に外部サービスとの通信でエラーを起こしたい場合に ExFit.HTTPoison へ渡すFault に使用する 省略可能
 - path: エラーにマッチするURLのパターン 省略可能 ワイルドカード(*)でのマッチが使える
 - methd: エラーにマッチするメソッド 省略可能
@@ -35,6 +40,7 @@ Injector のパラメータ
 - header: エラーにマッチするヘッダー 省略不可能
 - percent: パターンにマッチしたリクエストのうち何パーセントをエラーにするか
 
+### Response parameters
 - resp_status: エラーパターンにマッチした場合に返すhttpステータス
 - resp_body: エラーパターンにマッチした場合に返すレスポンス 固定値のみ返せる
 - resp_handler: レスポンスを返すmf 引数は１つ(connが渡ってくる) このオプションがある場合はresponseは使われない リクエスト内容に応じたエラーを返したい場合はこれを使う
@@ -115,3 +121,11 @@ if ExFit.matches?(conn, :not_found_on_request) do
 end
 ```
 
+## TODO
+
+- Allow :percent key.
+- Allow :resp_delay key.
+- Allow :delay parameters.
+- Disable path parameters warning "/:foo/:bar".
+- :headers are should parse list (cowboy style headers) [{key, valu}].
+- Allow Runtime configure
