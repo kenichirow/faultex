@@ -12,12 +12,31 @@ defmodule Injex.Plug do
   @impl Plug
   def call(conn, _opts) do
     case match(conn) do
-      %Injex{resp_status: resp_status, resp_body: resp_body} ->
-        Plug.Conn.send_resp(conn, resp_status, resp_body)
+      %Injex{} = injex ->
+        conn 
+        |> put_resp_headers(injex)
+        |> send_resp(injex)
 
       :pass ->
         conn
     end
+  end
+
+  def send_resp(conn, injex) do
+    Process.sleep(injex.resp_delay)
+
+    conn
+    |> Plug.Conn.send_resp(injex.resp_status, injex.resp_body)
+  end
+
+  def put_resp_headers(conn, injex) do
+    Enum.reduce(
+      injex.resp_headers,
+      conn,
+      fn {k, v}, c ->
+        Plug.Conn.put_resp_header(c, k, v)
+      end
+    )
   end
 
   def match(%Plug.Conn{} = conn) do
