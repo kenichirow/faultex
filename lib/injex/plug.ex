@@ -13,7 +13,7 @@ defmodule Injex.Plug do
   def call(conn, _opts) do
     case match(conn) do
       %Injex{} = injex ->
-        conn 
+        conn
         |> put_resp_headers(injex)
         |> send_resp(injex)
 

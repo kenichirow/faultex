@@ -12,7 +12,7 @@ defmodule Injex do
     :path_match,
     :vars,
     :headers,
-    :percent,
+    :percentage,
     :resp_status,
     :resp_headers,
     :resp_body,
@@ -32,7 +32,7 @@ defmodule Injex do
         host = Keyword.get(config, :host, "*")
         method = Keyword.get(config, :method, "GET")
         headers = Keyword.get(config, :headers, [])
-        percent = Keyword.get(config, :percent, 100)
+        percentage = Keyword.get(config, :percentage, 100)
 
         resp_body = Keyword.get(config, :resp_body, "")
         resp_status = Keyword.get(config, :resp_status, 200)
@@ -47,7 +47,7 @@ defmodule Injex do
           host: host,
           method: method,
           path_match: path_match,
-          percent: percent,
+          percentage: percentage,
           headers: headers,
           resp_status: resp_status,
           resp_body: resp_body,
@@ -73,7 +73,7 @@ defmodule Injex do
       any
     end
 
-    def create_matcher_body(_, _, _, _, %Injex{pass: true}) do
+    def create_matcher_body(_, _, _, _, _, %Injex{pass: true}) do
       quote location: :keep do
         def match(_host, _method, _, _req_headers) do
           :pass
@@ -81,8 +81,8 @@ defmodule Injex do
       end
     end
 
-    def create_matcher_body(host, method, path_match, headers, config) do
-      quote do
+    def create_matcher_body(host, method, path_match, headers, percentage, config) do
+      quote location: :keep do
         def match(
               unquote(wildcard_to_underscore(host)),
               unquote(wildcard_to_underscore(method)),
@@ -90,8 +90,9 @@ defmodule Injex do
               req_headers
             ) do
           disabled? = Application.get_env(:injex, :disable, false)
+          roll = Injex.roll(unquote(percentage))
 
-          if not disabled? and Enum.any?(req_headers, &match?(unquote(headers), &1)) do
+          if roll and not disabled? and Enum.any?(req_headers, &match?(unquote(headers), &1)) do
             unquote(Macro.escape(config))
           else
             :pass
@@ -106,12 +107,16 @@ defmodule Injex do
           host: host,
           method: method,
           path_match: path_match,
+          percentage: percentage,
           headers: headers
         } = config
 
         config = config
-        create_matcher_body(host, method, path_match, headers, config)
+        create_matcher_body(host, method, path_match, headers, percentage, config)
       end
     end
   end
+
+  def roll(100), do: true
+  def roll(percentage), do: :rand.uniform(100) < percentage
 end

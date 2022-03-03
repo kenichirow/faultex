@@ -16,7 +16,7 @@ ExFit is a simple Elixir fault injection library.
      method: "POST",
      exact: true,
      header: {"X-Fault-Inject", "auth-failed"},
-     percent: 100,
+     percentage: 100,
 
      # Response parameters
      resp_status: 401,
@@ -38,7 +38,7 @@ ExFit is a simple Elixir fault injection library.
 - methd: エラーにマッチするメソッド 省略可能
 - exact: URLの完全一致でのみエラーにする 省略可能
 - header: エラーにマッチするヘッダー 省略不可能
-- percent: パターンにマッチしたリクエストのうち何パーセントをエラーにするか
+- percentage: パターンにマッチしたリクエストのうち何パーセントをエラーにするか
 
 ### Response parameters
 - resp_status: エラーパターンにマッチした場合に返すhttpステータス
@@ -62,7 +62,7 @@ plug ExFit.Plug.Http, [
     status: 404,
     handlers: {MyApp.FailureHandler, 1},
     reposense: "404 not found",
-    percent: 100
+    percentage: 100
 ]
 
 plug ExFit.Plug.Http, [
@@ -70,13 +70,13 @@ plug ExFit.Plug.Http, [
     status: 400,
     handlers: {MyApp.FailureHandler, 1},
     reposense: "404 not found",
-    percent: 100
+    percentage: 100
   },
    %{
     status: 404,
     handlers: {MyApp.FailureHandler, 1},
     reposense: "404 not found",
-    percent: 100
+    percentage: 100
   }
 ]
 ```
@@ -123,9 +123,9 @@ end
 
 ## TODO
 
-- Allow :percent key.
-- Allow :resp_delay key.
-- Allow :delay parameters.
+- Allow :resp_headers key. ok
+- Allow :resp_delay key. ok
+- Allow :percentage key.
 - Disable path parameters warning "/:foo/:bar".
 - :headers are should parse list (cowboy style headers) [{key, valu}].
 - Allow Runtime configure
