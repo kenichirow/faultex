@@ -123,9 +123,9 @@ end
 
 ## TODO
 
-- Allow :resp_headers key. ok
-- Allow :resp_delay key. ok
-- Allow :percentage key.
-- Disable path parameters warning "/:foo/:bar".
-- :headers are should parse list (cowboy style headers) [{key, valu}].
-- Allow Runtime configure
+- [x] Allow :resp_headers key.
+- [x] Allow :resp_delay key.
+- [x] Allow :percentage key.
+- [] :headers are should parse list (cowboy style headers) [{key, valu}].
+- [] Allow Runtime configure
+- [] - Disable path parameters warning "/:foo/:bar".
