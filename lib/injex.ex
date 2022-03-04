@@ -22,7 +22,7 @@ defmodule Injex do
 
   defmodule Matcher do
     # Generate struct for pattern match from config.exs
-    defp build_matchers() do
+    def build_matchers() do
       failures = Application.get_env(:injex, :failures, [])
 
       Enum.map(failures, fn id ->
@@ -73,7 +73,7 @@ defmodule Injex do
       any
     end
 
-    def create_matcher_body(_, _, _, _, _, %Injex{pass: true}) do
+    def create_match(_, _, _, _, _, %Injex{pass: true}) do
       quote location: :keep do
         def match(_host, _method, _, _req_headers) do
           :pass
@@ -81,7 +81,7 @@ defmodule Injex do
       end
     end
 
-    def create_matcher_body(host, method, path_match, headers, percentage, config) do
+    def create_match(host, method, path_match, headers, percentage, config) do
       quote location: :keep do
         def match(
               unquote(wildcard_to_underscore(host)),
@@ -112,8 +112,7 @@ defmodule Injex do
           headers: headers
         } = config
 
-        config = config
-        create_matcher_body(host, method, path_match, headers, percentage, config)
+        create_match(host, method, path_match, headers, percentage, config)
       end
     end
   end
