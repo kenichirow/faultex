@@ -91,8 +91,9 @@ defmodule Injex do
             ) do
           disabled? = Application.get_env(:injex, :disable, false)
           roll = Injex.roll(unquote(percentage))
+          match_headers? = Injex.match_req_headers?(req_headers, unquote(headers))
 
-          if roll and not disabled? and Enum.any?(req_headers, &match?(unquote(headers), &1)) do
+          if roll and not disabled? and match_headers? do
             unquote(Macro.escape(config))
           else
             :pass
@@ -115,6 +116,15 @@ defmodule Injex do
         create_matcher_body(host, method, path_match, headers, percentage, config)
       end
     end
+  end
+
+  def match_req_headers?(req_headers, [header | []]) do
+    Enum.any?(req_headers, &match?(^header, &1))
+  end
+
+  def match_req_headers?(_, _) do
+    # TODO
+    false
   end
 
   def roll(100), do: true
