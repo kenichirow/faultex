@@ -130,13 +130,10 @@ defmodule Injex do
     end
   end
 
-  def match_req_headers?(req_headers, [header | []]) do
-    Enum.any?(req_headers, &match?(^header, &1))
-  end
-
-  def match_req_headers?(_, _) do
-    # TODO
-    false
+  def match_req_headers?(req_headers, headers) do
+    Enum.all?(headers, fn header ->
+      header in req_headers
+    end)
   end
 
   def roll(100), do: true
