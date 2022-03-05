@@ -1,30 +1,67 @@
 # ex_fit
 
-ExFit is a simple Elixir fault injection library.
-
 ![ci](https://github.com/kenichirow/ex_fit/actions/workflows/main.yml/badge.svg)
 
-```
-   config :ex_fit, 
-     disable: true,
-     injectors: [RegisterFailure]
-       
-   config :ex_fit, RegisterFailure
-     # Request matcher parameters
-     host: "example.com"
-     path: "/das/auth/*/*/register",
-     method: "POST",
-     exact: true,
-     header: {"X-Fault-Inject", "auth-failed"},
-     percentage: 100,
+ExFit is a simple Elixir fault injection library.
 
-     # Response parameters
-     resp_status: 401,
-     resp_handler: MyApp.FailureHandler,
-     resp_body: Jason.encode!(%{message: "Autharization failed"}),
-     resp_headers: [],
-     resp_delay: 1000
+
+## ExFit.Plug
+
+リクエストを受ける側の特定のURL、メソッド、ヘッダー、確率が一致した場合にエラーレスポンスをクライアントに返す
+
+
 ```
+ config :ex_fit, 
+   disable: true,
+   injectors: [RegisterFailure]
+     
+ config :ex_fit, RegisterFailure
+   # Request matcher parameters
+   host: "example.com"
+   path: "/das/auth/*/*/register",
+   method: "POST",
+   exact: true,
+   header: {"X-Fault-Inject", "auth-failed"},
+   percentage: 100,
+
+   # Response parameters
+   resp_status: 401,
+   resp_handler: MyApp.FailureHandler,
+   resp_body: Jason.encode!(%{message: "Autharization failed"}),
+   resp_headers: [],
+   resp_delay: 1000
+```
+
+
+```elixir
+defmodule MyRouter do
+  use Plug
+  plug ExFit.Plug.Http
+end
+```
+
+config.exsのinjectorsを使わずにplugのオプションに指定することもできる
+<注意> config.exs で設定した方が正規表現ではなく関数のパターンマッチが使われるので高速です
+
+```
+plug ExFit.Plug.Http, [
+    status: 404,
+    handlers: {MyApp.FailureHandler, 1},
+    reposense: "404 not found",
+    percentage: 100
+]
+```
+
+## ExFit.HTTPoison
+
+外部へのリクエストが特定のURL、メソッド、ヘッダー、確率が一致した場合にエラーレスポンスをクライアントに返す
+マッチした場合リクエストは中断されレスポンスのみが返る
+モックとして使うこともできる。
+
+```
+res = ExFit.HTTPoison.request!(:post, path, body, headers)
+```
+
 
 ### Global parameters
 
@@ -45,51 +82,6 @@ ExFit is a simple Elixir fault injection library.
 - resp_body: エラーパターンにマッチした場合に返すレスポンス 固定値のみ返せる
 - resp_handler: レスポンスを返すmf 引数は１つ(connが渡ってくる) このオプションがある場合はresponseは使われない リクエスト内容に応じたエラーを返したい場合はこれを使う
 - resp_delay: レスポンスを返すまでに遅延させる値(ms)
-
-
-## ExFit.Plug
-
-リクエストを受ける側でエラーにしたい場合に使用する
-
-```
-plug ExFit.Plug.Http
-```
-
-オプションで上書きできる特定のPhoenixControllerのみでエラーを起こしたい場合は
-
-```
-plug ExFit.Plug.Http, [
-    status: 404,
-    handlers: {MyApp.FailureHandler, 1},
-    reposense: "404 not found",
-    percentage: 100
-]
-
-plug ExFit.Plug.Http, [
-   %{
-    status: 400,
-    handlers: {MyApp.FailureHandler, 1},
-    reposense: "404 not found",
-    percentage: 100
-  },
-   %{
-    status: 404,
-    handlers: {MyApp.FailureHandler, 1},
-    reposense: "404 not found",
-    percentage: 100
-  }
-]
-```
-
-## ExFit.HTTPoison
-
-外部へのリクエストをエラーにする場合に使用する
-マッチした場合リクエストは中断されレスポンスのみが返る
-
-```
-res = ExFit.HTTPoison.request!(:post, path, body, headers)
-```
-
 
 ## Manual Fault injection
 
@@ -126,6 +118,9 @@ end
 - [x] Allow :resp_headers key.
 - [x] Allow :resp_delay key.
 - [x] Allow :percentage key.
-- [] :headers are should parse list (cowboy style headers) [{key, valu}].
+- [x] :headers are should parse list (cowboy style headers) [{key, value}].
+- [] Allow response handlers
 - [] Allow Runtime configure
+ - Injex.Router should have __using__ macro and compile routes dinamicaly
+- [] Disaced config.exs
 - [] - Disable path parameters warning "/:foo/:bar".
