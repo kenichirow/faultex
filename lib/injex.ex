@@ -5,8 +5,8 @@ defmodule Injex do
   @before_compile Injex.Matcher
 
   defstruct [
-    :pass,
     :id,
+    :pass,
     :host,
     :method,
     :path_match,
@@ -114,6 +114,19 @@ defmodule Injex do
 
         create_match(host, method, path_match, headers, percentage, config)
       end
+    end
+  end
+
+  def match(host, method, path, req_headers, injex) do
+    # TODO host, method, path, headers のマッチをやる
+    disabled? = Application.get_env(:injex, :disable, false)
+    roll = Injex.roll(injex.percentage)
+    match_headers? = Injex.match_req_headers?(req_headers, injex.headers)
+
+    if roll and not disabled? and match_headers? do
+      injex
+    else
+      :pass
     end
   end
 
