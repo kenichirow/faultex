@@ -38,6 +38,7 @@ defmodule Injex do
         resp_body = Keyword.get(config, :resp_body, "")
         resp_status = Keyword.get(config, :resp_status, 200)
         resp_headers = Keyword.get(config, :resp_headers, [])
+        resp_handler = Keyword.get(config, :resp_handler, nil)
         resp_delay = Keyword.get(config, :resp_delay, 0)
 
         {vars, path_match} = Plug.Router.Utils.build_path_match(path)
@@ -53,6 +54,7 @@ defmodule Injex do
           resp_status: resp_status,
           resp_body: resp_body,
           resp_headers: resp_headers,
+          resp_handler: resp_handler,
           resp_delay: resp_delay,
           params_match: params_match,
           vars: vars,
@@ -93,9 +95,18 @@ defmodule Injex do
           disabled? = Application.get_env(:injex, :disable, false)
           roll = Injex.roll(unquote(percentage))
           match_headers? = Injex.match_req_headers?(req_headers, unquote(headers))
-
+          config = unquote(Macro.escape(config))
+          headers = unquote(headers)
+          host = unquote(host)
+          method = unquote(method)
+          path_match = unquote(path_match)
+          {m,f} = config.resp_handler
           if roll and not disabled? and match_headers? do
-            unquote(Macro.escape(config))
+            if config.resp_handler != nil do
+              apply(m, f, [host, method, path_match, headers, config])
+            else
+              config
+            end
           else
             :pass
           end
@@ -118,17 +129,16 @@ defmodule Injex do
     end
   end
 
-  def match(host, method, path, req_headers, injex) do
+  def match(host, method, path_match, req_headers, injex) do
     # TODO host, method, path, headers のマッチをやる
     disabled? = Application.get_env(:injex, :disable, false)
     roll = Injex.roll(injex.percentage)
     match_headers? = Injex.match_req_headers?(req_headers, injex.headers)
 
+    {m,f} = injex.resp_handler
     if roll and not disabled? and match_headers? do
       if injex.resp_handler != nil do
-        # TODO request body
-        # MFA 
-        injex.resp_handler.(%{}, injex)
+        apply(m, f, [host, method, path_match, req_headers, injex])
       else
         injex
       end

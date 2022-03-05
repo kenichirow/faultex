@@ -74,7 +74,7 @@ defmodule InjexTest do
     matcher = %Injex{
       percentage: 100,
       headers: [{"test", "test1"}, {"x-fault-inject", "auth-failed"}],
-      resp_handler: resp_handler
+      resp_handler: {Injex.Handler, :handle_response}
     }
 
     assert %Injex{

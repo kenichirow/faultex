@@ -12,6 +12,7 @@ config :injex, PlugFailure,
   headers: [{"x-fault-inject", "auth-failed"}],
   percentage: 100,
   resp_headers: [],
+  resp_handler: {Injex.Handler, :handle_response},
   resp_status: 401,
   resp_body: "{}",
   resp_delay: 1000
