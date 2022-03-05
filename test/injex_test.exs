@@ -1,24 +1,92 @@
 defmodule InjexTest do
   use ExUnit.Case
-  doctest Injex
 
-  test "When request to Plug are matches Injex.Mathers, It must return error" do
-    conn = Plug.Test.conn("POST", "/auth/test/register")
-    conn = Plug.Conn.put_req_header(conn, "x-fault-inject", "auth-failed")
-    conn = Plug.Conn.put_req_header(conn, "content-type", "application/json")
-    conn = Injex.Plug.call(conn, Injex.Plug.init([]))
-    assert conn.status == 401
+  test "match/4 are compile time match configures" do
+    # matches
+    assert %Injex{} =
+             Injex.match("*", "POST", ["auth", "test", "register"], [
+               {"x-fault-inject", "auth-failed"},
+               {"content-type", "application/json"}
+             ])
+
+    # Method does not match
+    assert :pass ==
+             Injex.match("*", "GET", ["auth", "test", "register"], [
+               {"x-fault-inject", "auth-failed"},
+               {"content-type", "application/json"}
+             ])
+
+    # Headers does not match
+    assert :pass ==
+             Injex.match("*", "POST", ["auth", "test", "register"], [
+               {"content-type", "application/json"}
+             ])
   end
 
-  test "Request to remote server" do
-    {:ok, res} = Injex.HTTPoison.get("https://github.com/", [])
-    assert res.status_code == 200
+  test "match/5 are runtime match" do
+    assert %Injex{} =
+             Injex.match(
+               "https://example.com",
+               "POST",
+               ["auth", "test", "register"],
+               [
+                 {"x-fault-inject", "auth-failed"},
+                 {"content-type", "application/json"}
+               ],
+               %Injex{percentage: 100, headers: [{"x-fault-inject", "auth-failed"}]}
+             )
+  end
 
-    {:ok, res} = Injex.HTTPoison.get("https://github.com/foo", [])
-    assert res.status_code == 200
+  test "multiple header match" do
+    matcher = %Injex{
+      percentage: 100,
+      headers: [{"test", "test1"}, {"x-fault-inject", "auth-failed"}]
+    }
 
-    {:ok, res} = Injex.HTTPoison.get("https://github.com/foo", [{"x-fault-inject", "github"}])
+    assert :pass =
+             Injex.match(
+               "https://example.com",
+               "POST",
+               ["auth", "test", "register"],
+               [{"x-fault-inject", "auth-failed"}],
+               matcher
+             )
 
-    assert res.status_code == 400
+    assert %Injex{} =
+             Injex.match(
+               "https://example.com",
+               "POST",
+               ["auth", "test", "register"],
+               [{"test", "test1"}, {"x-fault-inject", "auth-failed"}],
+               matcher
+             )
+  end
+
+  test "resp_header functions should override resp_body, resp_header, resp_status" do
+    resp_handler = fn(req, injex) -> 
+      %Injex{
+        resp_status: 400,
+        resp_headers: [{"x-injex","failed"}],
+        resp_body: "request_failed"
+      }
+
+    end
+    matcher = %Injex{
+      percentage: 100,
+      headers: [{"test", "test1"}, {"x-fault-inject", "auth-failed"}],
+      resp_handler: resp_handler
+    }
+
+    assert %Injex{
+      resp_status: 400, 
+      resp_headers: [{"x-injex","failed"}],
+      resp_body: "request_failed"
+    } = Injex.match(
+        "https://example.com",
+        "POST",
+        ["auth", "test", "register"],
+        [{"test", "test1"}, {"x-fault-inject", "auth-failed"}],
+        matcher
+      )
   end
 end

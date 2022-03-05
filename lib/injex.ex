@@ -15,6 +15,7 @@ defmodule Injex do
     :percentage,
     :resp_status,
     :resp_headers,
+    :resp_handler,
     :resp_body,
     :resp_delay,
     :params_match
@@ -124,7 +125,13 @@ defmodule Injex do
     match_headers? = Injex.match_req_headers?(req_headers, injex.headers)
 
     if roll and not disabled? and match_headers? do
-      injex
+      if injex.resp_handler != nil do
+        # TODO request body
+        # MFA 
+        injex.resp_handler.(%{}, injex)
+      else
+        injex
+      end
     else
       :pass
     end
