@@ -23,7 +23,13 @@ defmodule Injex.Plug do
   end
 
   def send_resp(conn, injex) do
-    Process.sleep(injex.resp_delay)
+    delay =
+      case Map.get(injex, :resp_delay) do
+        nil -> 0
+        delay -> delay
+      end
+
+    Process.sleep(delay)
 
     conn
     |> Plug.Conn.send_resp(injex.resp_status, injex.resp_body)

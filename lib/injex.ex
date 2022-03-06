@@ -100,9 +100,10 @@ defmodule Injex do
           host = unquote(host)
           method = unquote(method)
           path_match = unquote(path_match)
-          {m,f} = config.resp_handler
+
           if roll and not disabled? and match_headers? do
             if config.resp_handler != nil do
+              {m, f} = config.resp_handler
               apply(m, f, [host, method, path_match, headers, config])
             else
               config
@@ -135,9 +136,9 @@ defmodule Injex do
     roll = Injex.roll(injex.percentage)
     match_headers? = Injex.match_req_headers?(req_headers, injex.headers)
 
-    {m,f} = injex.resp_handler
     if roll and not disabled? and match_headers? do
       if injex.resp_handler != nil do
+        {m, f} = injex.resp_handler
         apply(m, f, [host, method, path_match, req_headers, injex])
       else
         injex

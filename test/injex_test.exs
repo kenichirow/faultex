@@ -24,6 +24,7 @@ defmodule InjexTest do
   end
 
   test "match/5 are runtime match" do
+    # 確かにこれはマッチしない
     assert %Injex{} =
              Injex.match(
                "https://example.com",
@@ -63,14 +64,14 @@ defmodule InjexTest do
   end
 
   test "resp_header functions should override resp_body, resp_header, resp_status" do
-    resp_handler = fn(req, injex) -> 
+    resp_handler = fn req, injex ->
       %Injex{
         resp_status: 400,
-        resp_headers: [{"x-injex","failed"}],
+        resp_headers: [{"x-injex", "failed"}],
         resp_body: "request_failed"
       }
-
     end
+
     matcher = %Injex{
       percentage: 100,
       headers: [{"test", "test1"}, {"x-fault-inject", "auth-failed"}],
@@ -78,15 +79,16 @@ defmodule InjexTest do
     }
 
     assert %Injex{
-      resp_status: 400, 
-      resp_headers: [{"x-injex","failed"}],
-      resp_body: "request_failed"
-    } = Injex.match(
-        "https://example.com",
-        "POST",
-        ["auth", "test", "register"],
-        [{"test", "test1"}, {"x-fault-inject", "auth-failed"}],
-        matcher
-      )
+             resp_status: 400,
+             resp_headers: [{"x-injex", "failed"}],
+             resp_body: "request_failed"
+           } =
+             Injex.match(
+               "https://example.com",
+               "POST",
+               ["auth", "test", "register"],
+               [{"test", "test1"}, {"x-fault-inject", "auth-failed"}],
+               matcher
+             )
   end
 end

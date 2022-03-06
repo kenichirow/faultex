@@ -10,41 +10,25 @@ ExFit is a simple Elixir fault injection library.
 リクエストを受ける側の特定のURL、メソッド、ヘッダー、確率が一致した場合にエラーレスポンスをクライアントに返す
 
 
-```
- config :ex_fit, 
-   disable: true,
-   injectors: [RegisterFailure]
+```elixir
+  defmodule MyRouter do
+    use Injex.Plug.Router
      
- config :ex_fit, RegisterFailure
-   # Request matcher parameters
-   host: "example.com"
-   path: "/das/auth/*/*/register",
-   method: "POST",
-   exact: true,
-   header: {"X-Fault-Inject", "auth-failed"},
-   percentage: 100,
+    # これ一度マッチさせるから無理な気がする
+    Injex.get "/:foo/bar", match_headers: [{"x-fault-inject", "something"}], pecentage: 50 do
+      # do something
+    end
 
-   # Response parameters
-   resp_status: 401,
-   resp_handler: MyApp.FailureHandler,
-   resp_body: Jason.encode!(%{message: "Autharization failed"}),
-   resp_headers: [],
-   resp_delay: 1000
+    get "/:foo/bar" do
+      
+    end
+  end
 ```
 
+Use Plug directly
 
 ```elixir
-defmodule MyRouter do
-  use Plug
-  plug ExFit.Plug.Http
-end
-```
-
-config.exsのinjectorsを使わずにplugのオプションに指定することもできる
-<注意> config.exs で設定した方が正規表現ではなく関数のパターンマッチが使われるので高速です
-
-```
-plug ExFit.Plug.Http, [
+ plug ExFit.Plug, [
     status: 404,
     handlers: {MyApp.FailureHandler, 1},
     reposense: "404 not found",
@@ -59,8 +43,58 @@ plug ExFit.Plug.Http, [
 モックとして使うこともできる。
 
 ```
-res = ExFit.HTTPoison.request!(:post, path, body, headers)
+
+use ExFit.HTTPoison, [
+ {
+   # Request matcher parameters
+   host: "example.com"
+   path: "/das/auth/*/*/register",
+   method: "POST",
+   exact: true,
+   header: {"X-Fault-Inject", "auth-failed"},
+   percentage: 100,
+
+   # Response parameters
+   resp_status: 401,
+   resp_handler: MyApp.FailureHandler,
+   resp_body: Jason.encode!(%{message: "Autharization failed"}),
+   resp_headers: [],
+   resp_delay: 1000
+  }
+]
+
+alias ExFit.HTTPoison as HTTPoison
+
+res = HTTPoison.request!(:post, path, body, headers)
 ```
+
+Use config.exs and Application.compile_env!/3
+
+```elixir
+ config :ex_fit, 
+   injectors: [RegisterFailure]
+     
+ config :ex_fit, RegisterFailure
+   # Request matcher parameters
+   host: "example.com"
+   path: "/auth/*/*/register",
+   method: "POST",
+   exact: true,
+   header: {"X-Fault-Inject", "auth-failed"},
+   percentage: 100,
+
+   # Response parameters
+   resp_status: 401,
+   resp_handler: MyApp.FailureHandler,
+   resp_body: Jason.encode!(%{message: "Autharization failed"}),
+   resp_headers: [],
+   resp_delay: 1000
+```
+
+```elixir
+use ExFit.HTTPoison, Application.compile_env!(ex_fit, :injectors, [])
+```
+
 
 
 ### Global parameters
@@ -83,35 +117,6 @@ res = ExFit.HTTPoison.request!(:post, path, body, headers)
 - resp_handler: レスポンスを返すmf 引数は１つ(connが渡ってくる) このオプションがある場合はresponseは使われない リクエスト内容に応じたエラーを返したい場合はこれを使う
 - resp_delay: レスポンスを返すまでに遅延させる値(ms)
 
-## Manual Fault injection
-
-
-
-グローバルの設定にマッチする ExFit.match/1
-
-```
-if ExFit.match?(conn) do
-  raise MyApp.Error
-end
-```
-
-引数の設定パターンにマッチする ExFit.match?/2
-
-```
-pattern = [
-  headers: [{"X-Fault-Inject", "not-found"}],
-]
-
-# raw config name aliases
-if ExFit.matches?(conn, pattern) do
-  raise MyApp.Error
-end
-
-# config name aliases
-if ExFit.matches?(conn, :not_found_on_request) do
-  raise MyApp.Error
-end
-```
 
 ## TODO
 
@@ -119,8 +124,7 @@ end
 - [x] Allow :resp_delay key.
 - [x] Allow :percentage key.
 - [x] :headers are should parse list (cowboy style headers) [{key, value}].
-- [] Allow response handlers
-- [] Allow Runtime configure
- - Injex.Router should have __using__ macro and compile routes dinamicaly
+- [x] Allow response handlers
 - [] Disaced config.exs
+ - Injex.Plug and Injex.HTTPoison are should have __using__ macro and compile routes dinamicaly
 - [] - Disable path parameters warning "/:foo/:bar".
