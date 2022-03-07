@@ -2,6 +2,10 @@ defmodule Injex.PlugTest do
   use ExUnit.Case
 
   defmodule MyRouter do
+    use Plug.Router
+    plug(:match)
+    plug(:dispatch)
+
     use Injex.Plug,
       injectors: [
         %{
@@ -13,15 +17,13 @@ defmodule Injex.PlugTest do
           percentage: 100,
           resp_headers: [],
           resp_status: 401,
-          resp_body: "{}",
+          resp_body: "YOYO",
           resp_delay: 1000
         }
       ]
 
-    use Plug.Router
-    plug(:dispatch)
-
-    get "/foo" do
+    post "/auth/test/register" do
+      send_resp(conn, 200, "ok")
     end
   end
 
@@ -29,7 +31,8 @@ defmodule Injex.PlugTest do
     conn = Plug.Test.conn("POST", "/auth/test/register")
     conn = Plug.Conn.put_req_header(conn, "x-fault-inject", "auth-failed")
     conn = Plug.Conn.put_req_header(conn, "content-type", "application/json")
-    conn = Injex.Plug.call(conn, Injex.Plug.init([]))
-    assert conn.status == 401
+    conn = MyRouter.call(conn, MyRouter.init(matcher: MyRouter))
+    IO.inspect(conn)
+    assert conn.halted
   end
 end

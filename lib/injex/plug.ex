@@ -6,11 +6,11 @@ defmodule Injex.Plug do
 
   defmacro __using__(opts) do
     quote do
-      @before_compile Injex.Matcher
+      @before_compile Injex
 
       use Plug.Router
 
-      plug(Injex.Plug)
+      plug(Injex.Plug, matcher: __MODULE__)
     end
   end
 
@@ -20,12 +20,20 @@ defmodule Injex.Plug do
   end
 
   @impl Plug
-  def call(conn, _opts) do
-    case match(conn) do
+  def call(conn, opts) do
+    matcher = opts[:matcher]
+
+    case match(matcher, conn) do
       %Injex{} = injex ->
+        conn =
+          conn
+          |> put_resp_headers(injex)
+          |> send_resp(injex)
+
+        Plug.Conn.halt(conn)
+        IO.inspect("....")
+        IO.inspect("....")
         conn
-        |> put_resp_headers(injex)
-        |> send_resp(injex)
 
       :pass ->
         conn
@@ -41,8 +49,20 @@ defmodule Injex.Plug do
 
     Process.sleep(delay)
 
+    IO.inspect("SEND_RESP")
+    IO.inspect("_______")
+    IO.inspect(injex)
+
+    conn =
+      conn
+      |> Plug.Conn.send_resp(injex.resp_status, injex.resp_body)
+      |> IO.inspect()
+
+    IO.inspect("-------------")
+    IO.inspect(conn)
+
+    IO.inspect("-------------")
     conn
-    |> Plug.Conn.send_resp(injex.resp_status, injex.resp_body)
   end
 
   def put_resp_headers(conn, injex) do
@@ -55,7 +75,7 @@ defmodule Injex.Plug do
     )
   end
 
-  def match(%Plug.Conn{} = conn) do
+  def match(matcher, %Plug.Conn{} = conn) do
     %{
       host: _host,
       method: method,
@@ -63,6 +83,6 @@ defmodule Injex.Plug do
       req_headers: req_headers
     } = conn
 
-    Injex.match("*", method, path_info, req_headers)
+    matcher.match("*", method, path_info, req_headers)
   end
 end

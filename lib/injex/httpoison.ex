@@ -1,7 +1,7 @@
 defmodule Injex.HTTPoison do
   defmacro __using__(opts) do
     quote do
-      @before_compile Injex.Matcher
+      @before_compile Injex
     end
   end
 
