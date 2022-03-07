@@ -4,6 +4,16 @@ defmodule Injex.Plug do
   """
   @behaviour Plug
 
+  defmacro __using__(opts) do
+    quote do
+      @before_compile Injex.Matcher
+
+      use Plug.Router
+
+      plug(Injex.Plug)
+    end
+  end
+
   @impl Plug
   def init(opts) do
     opts

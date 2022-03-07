@@ -1,6 +1,23 @@
 defmodule Injex.HTTPoisonTest do
   use ExUnit.Case
 
+  defmodule MyApp.HTTTPoison do
+    use Injex.HTTPoison,
+      injectors: [
+        %{
+          host: "github.com",
+          path: "/foo",
+          method: "GET",
+          headers: [{"x-fault-inject", "github"}],
+          percentage: 100,
+          resp_headers: [],
+          resp_status: 400,
+          resp_body: "{}",
+          resp_delay: 1000
+        }
+      ]
+  end
+
   test "Request to remote server" do
     {:ok, res} = Injex.HTTPoison.get("https://github.com/", [])
     assert res.status_code == 200
