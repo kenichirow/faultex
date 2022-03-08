@@ -1,9 +1,9 @@
 defmodule Injex.HTTPoison do
   defmacro __using__(opts) do
     quote do
-      @before_compile Injex
       @matcher __MODULE__
 
+      use Injex
       use HTTPoison.Base
 
       @impl HTTPoison.Base

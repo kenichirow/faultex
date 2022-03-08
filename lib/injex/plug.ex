@@ -6,8 +6,7 @@ defmodule Injex.Plug do
 
   defmacro __using__(opts) do
     quote do
-      @before_compile Injex
-
+      use Injex
       use Plug.Router
 
       plug(Injex.Plug, matcher: __MODULE__)
@@ -30,9 +29,7 @@ defmodule Injex.Plug do
           |> put_resp_headers(injex)
           |> send_resp(injex)
 
-        Plug.Conn.halt(conn)
-        IO.inspect("....")
-        IO.inspect("....")
+        conn = Plug.Conn.halt(conn)
         conn
 
       :pass ->
@@ -49,19 +46,10 @@ defmodule Injex.Plug do
 
     Process.sleep(delay)
 
-    IO.inspect("SEND_RESP")
-    IO.inspect("_______")
-    IO.inspect(injex)
-
     conn =
       conn
       |> Plug.Conn.send_resp(injex.resp_status, injex.resp_body)
-      |> IO.inspect()
 
-    IO.inspect("-------------")
-    IO.inspect(conn)
-
-    IO.inspect("-------------")
     conn
   end
 
