@@ -19,28 +19,49 @@ defmodule Injex do
     :params_match
   ]
 
-  defmacro __before_compile__(env) do
-    injectors = Application.get_env(:injex, :injectors, [])
+#  defmacro __before_compile__(env) do
+#    injectors = Application.get_env(:injex, :injectors, [])
+#    build_matcher_func(injectors)
+#  end
 
-    for config <- build_matchers(injectors) do
-      %{
-        host: host,
-        method: method,
-        path_match: path_match,
-        percentage: percentage,
-        headers: headers
-      } = config
+  defmacro build_matcher_func(injectors) do
+    injectors =  Macro.escape(injectors)
+      for config <- Injex.build_matchers(injectors) do
+        config = config
+        headers = config.headers
+        host = config.host
+        method = config.method
 
-      create_match(host, method, path_match, headers, percentage, config)
-    end
+        quote do
+        def match(
+          Injex.wildcard_to_underscore(host),
+          Injex.wildcard_to_underscore(method),
+          path_match,
+          req_headers
+        ) do
+          disabled? = Application.get_env(:injex, :disable, false)
+          roll = Injex.roll(percentage)
+          match_headers? = Injex.match_req_headers?(req_headers, headers)
+
+          if roll and not disabled? and match_headers? do
+            if config.resp_handler != nil do
+              {m, f} = config.resp_handler
+              apply(m, f, [host, method, path_match, headers, config])
+            else
+              config
+            end
+          else
+            :pass
+          end
+        end
+        end
+
+      end
   end
 
   defmacro __using__(opts) do
-    quote do
-      @before_compile Injex
-
-      injectors = unquote(opts)[:injectors]
-      Module.put_attribute(__MODULE__, :injectors, injectors)
+    quote bind_quoted: [opts: opts] do
+      Injex.build_matcher_func(Macro.escape(opts)[:injectors])
 
       def match(host, method, path_match, req_headers, injex) do
         # TODO host, method, path, headers のマッチをやる
@@ -66,26 +87,24 @@ defmodule Injex do
 
   # Generate struct for pattern match from config.exs
   def build_matchers(injectors) do
-    Enum.map(injectors, fn id ->
-      config = Application.fetch_env!(:injex, id)
+    Enum.map(injectors, fn config ->
+      path = Map.get(config, :path, "*")
+      host = Map.get(config, :host, "*")
+      method = Map.get(config, :method, "GET")
+      headers = Map.get(config, :headers, [])
+      percentage = Map.get(config, :percentage, 100)
 
-      path = Keyword.get(config, :path, "*")
-      host = Keyword.get(config, :host, "*")
-      method = Keyword.get(config, :method, "GET")
-      headers = Keyword.get(config, :headers, [])
-      percentage = Keyword.get(config, :percentage, 100)
-
-      resp_body = Keyword.get(config, :resp_body, "")
-      resp_status = Keyword.get(config, :resp_status, 200)
-      resp_headers = Keyword.get(config, :resp_headers, [])
-      resp_handler = Keyword.get(config, :resp_handler, nil)
-      resp_delay = Keyword.get(config, :resp_delay, 0)
+      resp_body = Map.get(config, :resp_body, "")
+      resp_status = Map.get(config, :resp_status, 200)
+      resp_headers = Map.get(config, :resp_headers, [])
+      resp_handler = Map.get(config, :resp_handler, nil)
+      resp_delay = Map.get(config, :resp_delay, 0)
 
       {vars, path_match} = Plug.Router.Utils.build_path_match(path)
       params_match = Plug.Router.Utils.build_path_params_match(vars)
 
       %Injex{
-        id: id,
+        id: "",
         host: host,
         method: method,
         path_match: path_match,
@@ -120,37 +139,6 @@ defmodule Injex do
     quote location: :keep do
       def match(_host, _method, _, _req_headers) do
         :pass
-      end
-    end
-  end
-
-  def create_match(host, method, path_match, headers, percentage, config) do
-    quote location: :keep do
-      def match(
-            unquote(wildcard_to_underscore(host)),
-            unquote(wildcard_to_underscore(method)),
-            [unquote_splicing(path_match)],
-            req_headers
-          ) do
-        disabled? = Application.get_env(:injex, :disable, false)
-        roll = Injex.roll(unquote(percentage))
-        match_headers? = Injex.match_req_headers?(req_headers, unquote(headers))
-        config = unquote(Macro.escape(config))
-        headers = unquote(headers)
-        host = unquote(host)
-        method = unquote(method)
-        path_match = unquote(path_match)
-
-        if roll and not disabled? and match_headers? do
-          if config.resp_handler != nil do
-            {m, f} = config.resp_handler
-            apply(m, f, [host, method, path_match, headers, config])
-          else
-            config
-          end
-        else
-          :pass
-        end
       end
     end
   end

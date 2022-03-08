@@ -3,7 +3,7 @@ defmodule Injex.HTTPoison do
     quote do
       @matcher __MODULE__
 
-      use Injex, injectors: unquote(opts)[:injectors]
+      use Injex, unquote(opts)
       use HTTPoison.Base
 
       @impl HTTPoison.Base

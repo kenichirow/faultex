@@ -2,7 +2,8 @@ defmodule InjexTest do
   use ExUnit.Case
 
   defmodule Matcher do
-    use Injex
+    use Injex, injectors: [
+    ]
   end
 
   test "match/4 are compile time match configures" do
