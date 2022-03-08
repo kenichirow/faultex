@@ -2,7 +2,7 @@ import Config
 
 config :injex,
   disable: false,
-  failures: [PlugFailure, HttpClientFailure]
+  injectors: [PlugFailure, HttpClientFailure]
 
 config :injex, PlugFailure,
   host: "*",

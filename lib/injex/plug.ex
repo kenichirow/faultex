@@ -6,7 +6,7 @@ defmodule Injex.Plug do
 
   defmacro __using__(opts) do
     quote do
-      use Injex
+      use Injex, injectors: unquote(opts)[:injectors]
       use Plug.Router
 
       plug(Injex.Plug, matcher: __MODULE__)

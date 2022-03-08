@@ -19,9 +19,28 @@ defmodule Injex do
     :params_match
   ]
 
-  defmacro __using__(_opts) do
+  defmacro __before_compile__(env) do
+    injectors = Application.get_env(:injex, :injectors, [])
+
+    for config <- build_matchers(injectors) do
+      %{
+        host: host,
+        method: method,
+        path_match: path_match,
+        percentage: percentage,
+        headers: headers
+      } = config
+
+      create_match(host, method, path_match, headers, percentage, config)
+    end
+  end
+
+  defmacro __using__(opts) do
     quote do
       @before_compile Injex
+
+      injectors = unquote(opts)[:injectors]
+      Module.put_attribute(__MODULE__, :injectors, injectors)
 
       def match(host, method, path_match, req_headers, injex) do
         # TODO host, method, path, headers のマッチをやる
@@ -40,28 +59,14 @@ defmodule Injex do
           :pass
         end
       end
-    end
-  end
 
-  defmacro __before_compile__(_env) do
-    for config <- build_matchers() do
-      %{
-        host: host,
-        method: method,
-        path_match: path_match,
-        percentage: percentage,
-        headers: headers
-      } = config
-
-      create_match(host, method, path_match, headers, percentage, config)
+      def get_injectors(), do: @injectors
     end
   end
 
   # Generate struct for pattern match from config.exs
-  def build_matchers() do
-    failures = Application.get_env(:injex, :failures, [])
-
-    Enum.map(failures, fn id ->
+  def build_matchers(injectors) do
+    Enum.map(injectors, fn id ->
       config = Application.fetch_env!(:injex, id)
 
       path = Keyword.get(config, :path, "*")
