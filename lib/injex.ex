@@ -19,49 +19,55 @@ defmodule Injex do
     :params_match
   ]
 
-#  defmacro __before_compile__(env) do
-#    injectors = Application.get_env(:injex, :injectors, [])
-#    build_matcher_func(injectors)
-#  end
+  defmacro __before_compile__(env) do
+    injectors = Module.get_attribute(env.module, :injectors)
 
-  defmacro build_matcher_func(injectors) do
-    injectors =  Macro.escape(injectors)
-      for config <- Injex.build_matchers(injectors) do
-        config = config
-        headers = config.headers
-        host = config.host
-        method = config.method
+    for config <- Injex.build_matchers(injectors) do
+      host = config.host
+      method = config.method
+      path_match = config.path_match
+      headers = config.headers
+      resp_handler = config.resp_handler
+      percentage = config.percentage
 
-        quote do
+      quote do
         def match(
-          Injex.wildcard_to_underscore(host),
-          Injex.wildcard_to_underscore(method),
-          path_match,
-          req_headers
-        ) do
+              unquote(wildcard_to_underscore(host)),
+              unquote(wildcard_to_underscore(method)),
+              unquote(path_match),
+              req_headers
+            ) do
           disabled? = Application.get_env(:injex, :disable, false)
-          roll = Injex.roll(percentage)
-          match_headers? = Injex.match_req_headers?(req_headers, headers)
+          roll = Injex.roll(unquote(percentage))
+          match_headers? = Injex.match_req_headers?(req_headers, unquote(headers))
 
           if roll and not disabled? and match_headers? do
-            if config.resp_handler != nil do
-              {m, f} = config.resp_handler
-              apply(m, f, [host, method, path_match, headers, config])
+            if unquote(resp_handler) != nil do
+              {m, f} = unquote(resp_handler)
+
+              apply(m, f, [
+                unquote(host),
+                unquote(method),
+                unquote(path_match),
+                req_headers,
+                unquote(Macro.escape(config))
+              ])
             else
-              config
+              unquote(Macro.escape(config))
             end
           else
             :pass
           end
         end
-        end
-
       end
+    end
   end
 
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
-      Injex.build_matcher_func(Macro.escape(opts)[:injectors])
+      injectors = Keyword.get(opts, :injectors, [])
+      Module.put_attribute(__MODULE__, :injectors, injectors)
+      @before_compile Injex
 
       def match(host, method, path_match, req_headers, injex) do
         # TODO host, method, path, headers のマッチをやる
@@ -127,11 +133,11 @@ defmodule Injex do
       ]
   end
 
-  defp wildcard_to_underscore("*") do
+  def wildcard_to_underscore("*") do
     quote do: _
   end
 
-  defp wildcard_to_underscore(any) do
+  def wildcard_to_underscore(any) do
     any
   end
 
