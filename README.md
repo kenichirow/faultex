@@ -5,50 +5,41 @@
 ExFit is a simple Elixir fault injection library.
 
 
-## ExFit.Plug
+## USAGE
 
-リクエストを受ける側の特定のURL、メソッド、ヘッダー、確率が一致した場合にエラーレスポンスをクライアントに返す
+ExFit can be use with the Plug and HTTPoison
 
+### ExFit.Plug
 
 ```elixir
   defmodule MyRouter do
-    use Injex.Plug.Router
+    use Injex.Plug, injectors: [
+      path: "/test/*/bar",
+      method: "GET",
+      header: {"X-Fault-Inject", "auth-failed"},
+      percentage: 100,
+      resp_status: 401,
+      resp_body: Jason.encode!(%{message: "Autharization failed"}),
+      resp_headers: [],
+      resp_delay: 1000
+    ]
      
-    # これ一度マッチさせるから無理な気がする
-    Injex.get "/:foo/bar", match_headers: [{"x-fault-inject", "something"}], pecentage: 50 do
-      # do something
-    end
-
-    get "/:foo/bar" do
-      
+    get "test/:foo/bar" do
+      # returns 401 to client
+      # never call this route
+      ...
     end
   end
 ```
 
-Use Plug directly
+### ExFit.HTTPoison
 
 ```elixir
- plug ExFit.Plug, [
-    status: 404,
-    handlers: {MyApp.FailureHandler, 1},
-    reposense: "404 not found",
-    percentage: 100
-]
-```
-
-## ExFit.HTTPoison
-
-外部へのリクエストが特定のURL、メソッド、ヘッダー、確率が一致した場合にエラーレスポンスをクライアントに返す
-マッチした場合リクエストは中断されレスポンスのみが返る
-モックとして使うこともできる。
-
-```
-
 use ExFit.HTTPoison, [
  {
    # Request matcher parameters
    host: "example.com"
-   path: "/das/auth/*/*/register",
+   path: "/test/*/bar",
    method: "POST",
    exact: true,
    header: {"X-Fault-Inject", "auth-failed"},
@@ -56,17 +47,34 @@ use ExFit.HTTPoison, [
 
    # Response parameters
    resp_status: 401,
-   resp_handler: MyApp.FailureHandler,
    resp_body: Jason.encode!(%{message: "Autharization failed"}),
    resp_headers: [],
    resp_delay: 1000
   }
 ]
 
-alias ExFit.HTTPoison as HTTPoison
+defmodule MyApp.HTTPoison do
+  use Injex.HTTPoison, injectors: [
+      path: "/test/*/bar",
+      method: "GET",
+      header: {"X-Fault-Inject", "auth-failed"},
+      percentage: 100,
+      resp_status: 401,
+      resp_body: Jason.encode!(%{message: "Autharization failed"}),
+      resp_headers: [],
+      resp_delay: 1000
+    ]
+end
 
-res = HTTPoison.request!(:post, path, body, headers)
+alias MyApp.HTTPoison as HTTPoison
+
+# receive 401
+res = HTTPoison.request!(:get, "test/foo/bar", body, headers)
 ```
+
+
+## Aditional Configulation
+
 
 Use config.exs and Application.compile_env!/3
 
@@ -126,5 +134,5 @@ use ExFit.HTTPoison, Application.compile_env!(ex_fit, :injectors, [])
 - [x] :headers are should parse list (cowboy style headers) [{key, value}].
 - [x] Allow response handlers
 - [] Disaced config.exs
- - Injex.Plug and Injex.HTTPoison are should have __using__ macro and compile routes dinamicaly
+- [x] Injex.Plug and Injex.HTTPoison are should have __using__ macro and compile routes dinamicaly
 - [] - Disable path parameters warning "/:foo/:bar".
