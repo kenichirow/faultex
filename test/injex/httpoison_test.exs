@@ -24,9 +24,11 @@ defmodule Injex.HTTPoisonTest do
 
     {:ok, res} = MyApp.HTTPoison.get("https://github.com/foo", [])
     assert res.status_code == 200
+    
+    {:ok, res} = MyApp.HTTPoison.get("https://github.com/", [{"x-fault-inject", "github"}])
+    assert res.status_code == 200
 
     {:ok, res} = MyApp.HTTPoison.get("https://github.com/foo", [{"x-fault-inject", "github"}])
-
     assert res.status_code == 400
   end
 end

@@ -70,8 +70,6 @@ defmodule Injex.Plug do
       path_info: path_info,
       req_headers: req_headers
     } = conn
-    IO.inspect "plug path_info"
-    IO.inspect path_info
 
     matcher.match("*", method, path_info, req_headers)
   end

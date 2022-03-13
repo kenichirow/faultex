@@ -26,38 +26,45 @@ defmodule Injex do
       host = config.host
       method = config.method
       path_match = config.path_match
-      headers = config.headers
+      headers = config.headers || []
       resp_handler = config.resp_handler
       percentage = config.percentage
-      IO.inspect path_match
 
-      quote do
-        def match(
-              unquote(wildcard_to_underscore(host)),
-              unquote(wildcard_to_underscore(method)),
-              unquote(path_match),
-              req_headers
-            ) do
-          disabled? = Application.get_env(:injex, :disable, false)
-          roll = Injex.roll(unquote(percentage))
-          match_headers? = Injex.match_req_headers?(req_headers, unquote(headers))
-
-          if roll and not disabled? and match_headers? do
-            if unquote(resp_handler) != nil do
-              {m, f} = unquote(resp_handler)
-
-              apply(m, f, [
-                unquote(host),
-                unquote(method),
-                unquote(path_match),
-                req_headers,
-                unquote(Macro.escape(config))
-              ])
-            else
-              unquote(Macro.escape(config))
-            end
-          else
+      if config.pass do
+        quote do
+          def match(_, _, _, req_headers) do
             :pass
+          end
+        end
+      else
+        quote do
+          def match(
+                unquote(to_underscore(host)),
+                unquote(to_underscore(method)),
+                unquote(to_underscore(path_match)),
+                req_headers
+              ) do
+            disabled? = Application.get_env(:injex, :disable, false)
+            roll = Injex.roll(unquote(percentage))
+            match_headers? = Injex.match_req_headers?(req_headers, unquote(headers))
+
+            if roll and not disabled? and match_headers? do
+              if unquote(resp_handler) != nil do
+                {m, f} = unquote(resp_handler)
+
+                apply(m, f, [
+                  unquote(host),
+                  unquote(method),
+                  unquote(path_match),
+                  req_headers,
+                  unquote(Macro.escape(config))
+                ])
+              else
+                unquote(Macro.escape(config))
+              end
+            else
+              :pass
+            end
           end
         end
       end
@@ -134,20 +141,19 @@ defmodule Injex do
       ]
   end
 
-  def wildcard_to_underscore("*") do
+  def to_underscore(nil) do
     quote do: _
   end
 
-  def wildcard_to_underscore(any) do
+  def to_underscore("*") do
+    quote do: _
+  end
+
+  def to_underscore(any) do
     any
   end
 
   def create_match(_, _, _, _, _, %Injex{pass: true}) do
-    quote location: :keep do
-      def match(_host, _method, _, _req_headers) do
-        :pass
-      end
-    end
   end
 
   def match_req_headers?(req_headers, headers) do

@@ -3,8 +3,8 @@ defmodule Injex.HTTPoison do
     quote do
       @matcher __MODULE__
 
-      use Injex, unquote(opts)
       use HTTPoison.Base
+      use Injex, unquote(opts)
 
       @impl HTTPoison.Base
       def request(method, url, body \\ "", headers \\ [], options \\ []) do

@@ -2,7 +2,20 @@ defmodule InjexTest do
   use ExUnit.Case
 
   defmodule Matcher do
-    use Injex, injectors: []
+    use Injex, injectors: [
+        %{
+          host: "*",
+          path: "/auth/:id/*path",
+          method: "POST",
+          exact: true,
+          headers: [{"x-fault-inject", "auth-failed"}],
+          percentage: 100,
+          resp_headers: [],
+          resp_status: 401,
+          resp_body: "unauthorized",
+          resp_delay: 1000
+        }
+    ]
   end
 
   test "match/4 are compile time match configures" do
@@ -25,10 +38,21 @@ defmodule InjexTest do
              Matcher.match("*", "POST", ["auth", "test", "register"], [
                {"content-type", "application/json"}
              ])
+
+    # disabled
+    Application.put_env(:injex, :disable, true)
+    ExUnit.Callbacks.on_exit(fn ->
+      Application.put_env(:injex, :disable, false)
+    end)
+
+    assert :pass =
+             Matcher.match("*", "POST", ["auth", "test", "register"], [
+               {"x-fault-inject", "auth-failed"},
+               {"content-type", "application/json"}
+             ])
   end
 
   test "match/5 are runtime match" do
-    # 確かにこれはマッチしない
     assert %Injex{} =
              Matcher.match(
                "https://example.com",

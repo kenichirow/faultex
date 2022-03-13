@@ -133,6 +133,8 @@ use ExFit.HTTPoison, Application.compile_env!(ex_fit, :injectors, [])
 - [x] Allow :percentage key.
 - [x] :headers are should parse list (cowboy style headers) [{key, value}].
 - [x] Allow response handlers
-- [] Disaced config.exs
+- [x] Disaced config.exs
 - [x] Injex.Plug and Injex.HTTPoison are should have __using__ macro and compile routes dinamicaly
 - [] - Disable path parameters warning "/:foo/:bar".
+- [x] Allow :disable key.
+- [] Allow :exact key.
