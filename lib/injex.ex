@@ -29,6 +29,7 @@ defmodule Injex do
       headers = config.headers
       resp_handler = config.resp_handler
       percentage = config.percentage
+      IO.inspect path_match
 
       quote do
         def match(
