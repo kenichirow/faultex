@@ -33,11 +33,11 @@ defmodule Injex do
 
       quote do
         def match(
-          unquote(to_underscore(host)),
-          unquote(to_underscore(method)),
-          unquote(to_underscore(path_match)),
-          req_headers
-        ) do
+              unquote(to_underscore(host)),
+              unquote(to_underscore(method)),
+              unquote(to_underscore(path_match)),
+              req_headers
+            ) do
           disabled? = Application.get_env(:injex, :disable, false)
           roll = Injex.roll(unquote(percentage))
           match_headers? = Injex.match_req_headers?(req_headers, unquote(headers))

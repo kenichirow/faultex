@@ -2,7 +2,8 @@ defmodule InjexTest do
   use ExUnit.Case
 
   defmodule Matcher do
-    use Injex, injectors: [
+    use Injex,
+      injectors: [
         %{
           host: "*",
           path: "/auth/:id/*path",
@@ -15,7 +16,7 @@ defmodule InjexTest do
           resp_body: "unauthorized",
           resp_delay: 1000
         }
-    ]
+      ]
   end
 
   test "match/4 are compile time match configures" do
@@ -41,6 +42,7 @@ defmodule InjexTest do
 
     # disabled
     Application.put_env(:injex, :disable, true)
+
     ExUnit.Callbacks.on_exit(fn ->
       Application.put_env(:injex, :disable, false)
     end)
@@ -92,7 +94,7 @@ defmodule InjexTest do
   end
 
   test "resp_header functions should override resp_body, resp_header, resp_status" do
-    resp_handler = fn req, injex ->
+    resp_handler = fn _req, _injex ->
       %Injex{
         resp_status: 400,
         resp_headers: [{"x-injex", "failed"}],

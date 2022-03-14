@@ -2,8 +2,6 @@ defmodule Injex.PlugTest do
   use ExUnit.Case
 
   defmodule MyRouter do
-    use Plug.Router
-
     use Injex.Plug,
       injectors: [
         %{
