@@ -29,42 +29,35 @@ defmodule Injex do
       headers = config.headers || []
       resp_handler = config.resp_handler
       percentage = config.percentage
+      pass = config.pass
 
-      if config.pass do
-        quote do
-          def match(_, _, _, req_headers) do
-            :pass
-          end
-        end
-      else
-        quote do
-          def match(
-                unquote(to_underscore(host)),
-                unquote(to_underscore(method)),
-                unquote(to_underscore(path_match)),
-                req_headers
-              ) do
-            disabled? = Application.get_env(:injex, :disable, false)
-            roll = Injex.roll(unquote(percentage))
-            match_headers? = Injex.match_req_headers?(req_headers, unquote(headers))
+      quote do
+        def match(
+          unquote(to_underscore(host)),
+          unquote(to_underscore(method)),
+          unquote(to_underscore(path_match)),
+          req_headers
+        ) do
+          disabled? = Application.get_env(:injex, :disable, false)
+          roll = Injex.roll(unquote(percentage))
+          match_headers? = Injex.match_req_headers?(req_headers, unquote(headers))
 
-            if roll and not disabled? and match_headers? do
-              if unquote(resp_handler) != nil do
-                {m, f} = unquote(resp_handler)
+          if not unquote(pass) and roll and not disabled? and match_headers? do
+            if unquote(resp_handler) != nil do
+              {m, f} = unquote(resp_handler)
 
-                apply(m, f, [
-                  unquote(host),
-                  unquote(method),
-                  unquote(path_match),
-                  req_headers,
-                  unquote(Macro.escape(config))
-                ])
-              else
+              apply(m, f, [
+                unquote(host),
+                unquote(method),
+                unquote(path_match),
+                req_headers,
                 unquote(Macro.escape(config))
-              end
+              ])
             else
-              :pass
+              unquote(Macro.escape(config))
             end
+          else
+            :pass
           end
         end
       end
