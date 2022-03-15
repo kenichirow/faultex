@@ -1,8 +1,8 @@
-defmodule Injex.PlugTest do
+defmodule Faultex.PlugTest do
   use ExUnit.Case
 
   defmodule MyRouter do
-    use Injex.Plug,
+    use Faultex.Plug,
       injectors: [
         %{
           host: "*",
@@ -26,7 +26,7 @@ defmodule Injex.PlugTest do
     end
   end
 
-  test "When request to Plug are matches Injex.Mathers, It must return error" do
+  test "When request to Plug are matches Faultex.Mathers, It must return error" do
     conn = Plug.Test.conn("POST", "/auth/test/register")
     conn = Plug.Conn.put_req_header(conn, "content-type", "application/json")
     conn = MyRouter.call(conn, MyRouter.init(matcher: MyRouter))

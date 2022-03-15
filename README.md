@@ -1,27 +1,51 @@
-# ex_fit
+# Faultex
 
-![ci](https://github.com/kenichirow/ex_fit/actions/workflows/main.yml/badge.svg)
+![ci](https://github.com/kenichirow/faultex/actions/workflows/main.yml/badge.svg)
 
-ExFit is a simple Elixir fault injection library.
+Faultex is a simple Elixir fault injection library.
 
 
 ## USAGE
 
-ExFit can be use with the Plug and HTTPoison
+Faultex can be use with the Plug and HTTPoison
 
-### ExFit.Plug
+
+### Faultex.Plug
+
+Add the :faultex to your project's mix.exs:
+
+```
+defp deps do
+  [
+    {:plug, "~> 1.0"},
+    {:faultex, "~> 0.1"}
+  ]
+end
+```
 
 ```elixir
   defmodule MyRouter do
-    use Injex.Plug, injectors: [
+    use Faultex.Plug, injectors: [
+     [
       path: "/test/*/bar",
       method: "GET",
-      header: {"X-Fault-Inject", "auth-failed"},
+      headers: [{"X-Fault-Inject", "auth-failed"}],
       percentage: 100,
       resp_status: 401,
       resp_body: Jason.encode!(%{message: "Autharization failed"}),
       resp_headers: [],
       resp_delay: 1000
+     ],
+     [
+      path: "/test/*/bar",
+      method: "GET",
+      headers: [{"X-Fault-Inject", "auth-failed"}],
+      percentage: 100,
+      resp_status: 401,
+      resp_body: Jason.encode!(%{message: "Autharization failed"}),
+      resp_headers: [],
+      resp_delay: 1000
+     ]
     ]
      
     get "test/:foo/bar" do
@@ -32,32 +56,31 @@ ExFit can be use with the Plug and HTTPoison
   end
 ```
 
-### ExFit.HTTPoison
+```bash
+curl 
+> res
+```
+
+
+### Faultex.HTTPoison
+
+Add the :ex_fit to your project's mix.exs:
+
+```
+defp deps do
+  [
+    {:httpoison, "~> 1.0"},
+    {:ex_fit, "~> 0.1"}
+  ]
+end
+```
 
 ```elixir
-use ExFit.HTTPoison, [
- {
-   # Request matcher parameters
-   host: "example.com"
-   path: "/test/*/bar",
-   method: "POST",
-   exact: true,
-   header: {"X-Fault-Inject", "auth-failed"},
-   percentage: 100,
-
-   # Response parameters
-   resp_status: 401,
-   resp_body: Jason.encode!(%{message: "Autharization failed"}),
-   resp_headers: [],
-   resp_delay: 1000
-  }
-]
-
 defmodule MyApp.HTTPoison do
   use Injex.HTTPoison, injectors: [
       path: "/test/*/bar",
       method: "GET",
-      header: {"X-Fault-Inject", "auth-failed"},
+      headers: [{"X-Fault-Inject", "auth-failed"}],
       percentage: 100,
       resp_status: 401,
       resp_body: Jason.encode!(%{message: "Autharization failed"}),
@@ -70,13 +93,13 @@ alias MyApp.HTTPoison as HTTPoison
 
 # receive 401
 res = HTTPoison.request!(:get, "test/foo/bar", body, headers)
+
+> res%{
+}
 ```
 
 
-## Aditional Configulation
-
-
-Use config.exs and Application.compile_env!/3
+## Use config.exs
 
 ```elixir
  config :ex_fit, 
@@ -100,31 +123,27 @@ Use config.exs and Application.compile_env!/3
 ```
 
 ```elixir
-use ExFit.HTTPoison, Application.compile_env!(ex_fit, :injectors, [])
+use Faultex.HTTPoison, Application.compile_env!(ex_fit, :injectors)
 ```
 
-
-
-### Global parameters
+### Global Parameters
 
 - disable disable all injectors
 - injectors list of injectors 
 
-### Match parameters
+### Fault Injector Configuration
+
 - disable disable this injectors
-- host: エラーにマッチするホスト 基本的に外部サービスとの通信でエラーを起こしたい場合に ExFit.HTTPoison へ渡すFault に使用する 省略可能
-- path: エラーにマッチするURLのパターン 省略可能 ワイルドカード(*)でのマッチが使える
+- host: default is `"*"`
+- path: default is `"*`
 - methd: エラーにマッチするメソッド 省略可能
 - exact: URLの完全一致でのみエラーにする 省略可能
 - header: エラーにマッチするヘッダー 省略不可能
 - percentage: パターンにマッチしたリクエストのうち何パーセントをエラーにするか
-
-### Response parameters
 - resp_status: エラーパターンにマッチした場合に返すhttpステータス
 - resp_body: エラーパターンにマッチした場合に返すレスポンス 固定値のみ返せる
 - resp_handler: レスポンスを返すmf 引数は１つ(connが渡ってくる) このオプションがある場合はresponseは使われない リクエスト内容に応じたエラーを返したい場合はこれを使う
 - resp_delay: レスポンスを返すまでに遅延させる値(ms)
-
 
 ## TODO
 
@@ -135,6 +154,7 @@ use ExFit.HTTPoison, Application.compile_env!(ex_fit, :injectors, [])
 - [x] Allow response handlers
 - [x] Disaced config.exs
 - [x] Injex.Plug and Injex.HTTPoison are should have __using__ macro and compile routes dinamicaly
-- [] - Disable path parameters warning "/:foo/:bar".
 - [x] Allow :disable key.
 - [] Allow :exact key.
+- [] - pass the path parameters to resp_handler
+- [] Injex.match returns {:ok, true, %Injex.Response{}}

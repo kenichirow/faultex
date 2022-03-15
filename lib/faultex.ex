@@ -1,4 +1,4 @@
-defmodule Injex do
+defmodule Faultex do
   @moduledoc """
   """
 
@@ -22,7 +22,7 @@ defmodule Injex do
   defmacro __before_compile__(env) do
     injectors = Module.get_attribute(env.module, :injectors)
 
-    for config <- Injex.build_matchers(injectors) do
+    for config <- Faultex.build_matchers(injectors) do
       host = config.host
       method = config.method
       path_match = config.path_match
@@ -30,6 +30,7 @@ defmodule Injex do
       resp_handler = config.resp_handler
       percentage = config.percentage
       disable = config.disable || false
+      params_match = config.params_match
 
       quote do
         def match(
@@ -39,9 +40,10 @@ defmodule Injex do
               req_headers
             ) do
           disabled? = Application.get_env(:injex, :disable, false) || unquote(disable)
-          roll = Injex.roll(unquote(percentage))
-          match_headers? = Injex.match_req_headers?(req_headers, unquote(headers))
+          roll = Faultex.roll(unquote(percentage))
+          match_headers? = Faultex.match_req_headers?(req_headers, unquote(headers))
 
+          # resp_handler はここで実行しない params_match
           if roll and not disabled? and match_headers? do
             if unquote(resp_handler) != nil do
               {m, f} = unquote(resp_handler)
@@ -68,13 +70,15 @@ defmodule Injex do
     quote bind_quoted: [opts: opts] do
       injectors = Keyword.get(opts, :injectors, [])
       Module.put_attribute(__MODULE__, :injectors, injectors)
-      @before_compile Injex
+      @before_compile Faultex
 
       def match(host, method, path_match, req_headers, injex) do
         # TODO host, method, path, headers のマッチをやる
-        disabled? = Application.get_env(:injex, :disable, false) || (Map.get(injex, :disable) ||  false)
-        roll = Injex.roll(injex.percentage)
-        match_headers? = Injex.match_req_headers?(req_headers, injex.headers)
+        disabled? =
+          Application.get_env(:injex, :disable, false) || (Map.get(injex, :disable) || false)
+
+        roll = Faultex.roll(injex.percentage)
+        match_headers? = Faultex.match_req_headers?(req_headers, injex.headers)
 
         if roll and not disabled? and match_headers? do
           if injex.resp_handler != nil do
@@ -111,8 +115,11 @@ defmodule Injex do
       {vars, path_match} = Plug.Router.Utils.build_path_match(path)
       params_match = Plug.Router.Utils.build_path_params_match(vars)
 
-      %Injex{
+      %Faultex{
         id: "",
+        disable: disable,
+        params_match: params_match,
+        vars: vars,
         host: host,
         method: method,
         path_match: path_match,
@@ -121,16 +128,13 @@ defmodule Injex do
         resp_status: resp_status,
         resp_body: resp_body,
         resp_headers: resp_headers,
-        resp_handler: resp_handler,
         resp_delay: resp_delay,
-        params_match: params_match,
-        vars: vars,
-        disable: disable
+        resp_handler: resp_handler,
       }
     end) ++
       [
-        %Injex{
-          disable: true 
+        %Faultex{
+          disable: true
         }
       ]
   end

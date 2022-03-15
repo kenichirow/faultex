@@ -1,8 +1,8 @@
-defmodule Injex.HTTPoisonTest do
+defmodule Faultex.HTTPoisonTest do
   use ExUnit.Case
 
   defmodule MyApp.HTTPoison do
-    use Injex.HTTPoison,
+    use Faultex.HTTPoison,
       injectors: [
         %{
           host: "github.com",

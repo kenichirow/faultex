@@ -1,8 +1,8 @@
-defmodule InjexTest do
+defmodule FaultexTest do
   use ExUnit.Case
 
   defmodule Matcher do
-    use Injex,
+    use Faultex,
       injectors: [
         %{
           host: "*",
@@ -21,7 +21,7 @@ defmodule InjexTest do
 
   test "match/4 are compile time match configures" do
     # matches
-    assert %Injex{} =
+    assert %Faultex{} =
              Matcher.match("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
@@ -55,7 +55,7 @@ defmodule InjexTest do
   end
 
   test "match/5 are runtime match" do
-    assert %Injex{} =
+    assert %Faultex{} =
              Matcher.match(
                "https://example.com",
                "POST",
@@ -64,12 +64,12 @@ defmodule InjexTest do
                  {"x-fault-inject", "auth-failed"},
                  {"content-type", "application/json"}
                ],
-               %Injex{percentage: 100, headers: [{"x-fault-inject", "auth-failed"}]}
+               %Faultex{percentage: 100, headers: [{"x-fault-inject", "auth-failed"}]}
              )
   end
 
   test "multiple header match" do
-    matcher = %Injex{
+    matcher = %Faultex{
       percentage: 100,
       headers: [{"test", "test1"}, {"x-fault-inject", "auth-failed"}]
     }
@@ -83,7 +83,7 @@ defmodule InjexTest do
                matcher
              )
 
-    assert %Injex{} =
+    assert %Faultex{} =
              Matcher.match(
                "https://example.com",
                "POST",
@@ -95,20 +95,20 @@ defmodule InjexTest do
 
   test "resp_header functions should override resp_body, resp_header, resp_status" do
     resp_handler = fn _req, _injex ->
-      %Injex{
+      %Faultex{
         resp_status: 400,
         resp_headers: [{"x-injex", "failed"}],
         resp_body: "request_failed"
       }
     end
 
-    matcher = %Injex{
+    matcher = %Faultex{
       percentage: 100,
       headers: [{"test", "test1"}, {"x-fault-inject", "auth-failed"}],
-      resp_handler: {Injex.Handler, :handle_response}
+      resp_handler: {Faultex.Handler, :handle_response}
     }
 
-    assert %Injex{
+    assert %Faultex{
              resp_status: 400,
              resp_headers: [{"x-injex", "failed"}],
              resp_body: "request_failed"

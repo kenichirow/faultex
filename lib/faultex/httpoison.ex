@@ -1,10 +1,10 @@
-defmodule Injex.HTTPoison do
+defmodule Faultex.HTTPoison do
   defmacro __using__(opts) do
     quote do
       @matcher __MODULE__
 
       use HTTPoison.Base
-      use Injex, unquote(opts)
+      use Faultex, unquote(opts)
 
       @impl HTTPoison.Base
       def request(method, url, body \\ "", headers \\ [], options \\ []) do
@@ -18,7 +18,7 @@ defmodule Injex.HTTPoison do
         }
 
         case match(request) do
-          %Injex{resp_status: resp_status, resp_body: resp_body, resp_headers: resp_headers} ->
+          %Faultex{resp_status: resp_status, resp_body: resp_body, resp_headers: resp_headers} ->
             {:ok,
              %HTTPoison.Response{
                body: resp_body,

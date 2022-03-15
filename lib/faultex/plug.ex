@@ -1,4 +1,4 @@
-defmodule Injex.Plug do
+defmodule Faultex.Plug do
   @moduledoc """
     HTTPリクエストにマッチさせてエラーレスポンスを返すPlug
   """
@@ -6,10 +6,10 @@ defmodule Injex.Plug do
 
   defmacro __using__(opts) do
     quote do
-      use Injex, unquote(opts)
+      use Faultex, unquote(opts)
       use Plug.Router
 
-      plug(Injex.Plug, matcher: __MODULE__)
+      plug(Faultex.Plug, matcher: __MODULE__)
     end
   end
 
@@ -23,7 +23,7 @@ defmodule Injex.Plug do
     matcher = opts[:matcher]
 
     case match(matcher, conn) do
-      %Injex{} = injex ->
+      %Faultex{} = injex ->
         conn =
           conn
           |> put_resp_headers(injex)
@@ -46,6 +46,7 @@ defmodule Injex.Plug do
 
     Process.sleep(delay)
 
+    # TODO: 
     conn =
       conn
       |> Plug.Conn.send_resp(injex.resp_status, injex.resp_body)
