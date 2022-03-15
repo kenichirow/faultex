@@ -4,7 +4,7 @@ defmodule Injex do
 
   defstruct [
     :id,
-    :pass,
+    :disable,
     :host,
     :method,
     :path_match,
@@ -29,7 +29,7 @@ defmodule Injex do
       headers = config.headers || []
       resp_handler = config.resp_handler
       percentage = config.percentage
-      pass = config.pass
+      disable = config.disable || false
 
       quote do
         def match(
@@ -38,11 +38,11 @@ defmodule Injex do
               unquote(to_underscore(path_match)),
               req_headers
             ) do
-          disabled? = Application.get_env(:injex, :disable, false)
+          disabled? = Application.get_env(:injex, :disable, false) || unquote(disable)
           roll = Injex.roll(unquote(percentage))
           match_headers? = Injex.match_req_headers?(req_headers, unquote(headers))
 
-          if not unquote(pass) and roll and not disabled? and match_headers? do
+          if roll and not disabled? and match_headers? do
             if unquote(resp_handler) != nil do
               {m, f} = unquote(resp_handler)
 
@@ -72,7 +72,7 @@ defmodule Injex do
 
       def match(host, method, path_match, req_headers, injex) do
         # TODO host, method, path, headers のマッチをやる
-        disabled? = Application.get_env(:injex, :disable, false)
+        disabled? = Application.get_env(:injex, :disable, false) || (Map.get(injex, :disable) ||  false)
         roll = Injex.roll(injex.percentage)
         match_headers? = Injex.match_req_headers?(req_headers, injex.headers)
 
@@ -106,6 +106,7 @@ defmodule Injex do
       resp_headers = Map.get(config, :resp_headers, [])
       resp_handler = Map.get(config, :resp_handler, nil)
       resp_delay = Map.get(config, :resp_delay, 0)
+      disable = Map.get(config, :disable, false)
 
       {vars, path_match} = Plug.Router.Utils.build_path_match(path)
       params_match = Plug.Router.Utils.build_path_params_match(vars)
@@ -124,12 +125,12 @@ defmodule Injex do
         resp_delay: resp_delay,
         params_match: params_match,
         vars: vars,
-        pass: false
+        disable: disable
       }
     end) ++
       [
         %Injex{
-          pass: true
+          disable: true 
         }
       ]
   end
@@ -144,9 +145,6 @@ defmodule Injex do
 
   def to_underscore(any) do
     any
-  end
-
-  def create_match(_, _, _, _, _, %Injex{pass: true}) do
   end
 
   def match_req_headers?(req_headers, headers) do
