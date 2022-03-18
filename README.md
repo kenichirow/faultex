@@ -26,7 +26,7 @@ end
 ```elixir
   defmodule MyRouter do
     use Faultex.Plug, injectors: [
-     [
+     %{
       path: "/test/*/bar",
       method: "GET",
       headers: [{"X-Fault-Inject", "auth-failed"}],
@@ -35,17 +35,7 @@ end
       resp_body: Jason.encode!(%{message: "Autharization failed"}),
       resp_headers: [],
       resp_delay: 1000
-     ],
-     [
-      path: "/test/*/bar",
-      method: "GET",
-      headers: [{"X-Fault-Inject", "auth-failed"}],
-      percentage: 100,
-      resp_status: 401,
-      resp_body: Jason.encode!(%{message: "Autharization failed"}),
-      resp_headers: [],
-      resp_delay: 1000
-     ]
+     }
     ]
      
     get "test/:foo/bar" do
@@ -78,6 +68,7 @@ end
 ```elixir
 defmodule MyApp.HTTPoison do
   use Injex.HTTPoison, injectors: [
+     %{
       path: "/test/*/bar",
       method: "GET",
       headers: [{"X-Fault-Inject", "auth-failed"}],
@@ -86,6 +77,7 @@ defmodule MyApp.HTTPoison do
       resp_body: Jason.encode!(%{message: "Autharization failed"}),
       resp_headers: [],
       resp_delay: 1000
+      }
     ]
 end
 

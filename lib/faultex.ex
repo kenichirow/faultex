@@ -22,7 +22,7 @@ defmodule Faultex do
   defmacro __before_compile__(env) do
     injectors = Module.get_attribute(env.module, :injectors)
 
-    for config <- Faultex.build_matchers(injectors) do
+    for config <- Faultex.build_injectors(injectors) do
       host = config.host
       method = config.method
       path_match = config.path_match
@@ -97,40 +97,9 @@ defmodule Faultex do
   end
 
   # Generate struct for pattern match from config.exs
-  def build_matchers(injectors) do
-    Enum.map(injectors, fn config ->
-      path = Map.get(config, :path, "*")
-      host = Map.get(config, :host, "*")
-      method = Map.get(config, :method, "GET")
-      headers = Map.get(config, :headers, [])
-      percentage = Map.get(config, :percentage, 100)
-
-      resp_body = Map.get(config, :resp_body, "")
-      resp_status = Map.get(config, :resp_status, 200)
-      resp_headers = Map.get(config, :resp_headers, [])
-      resp_handler = Map.get(config, :resp_handler, nil)
-      resp_delay = Map.get(config, :resp_delay, 0)
-      disable = Map.get(config, :disable, false)
-
-      {vars, path_match} = Plug.Router.Utils.build_path_match(path)
-      params_match = Plug.Router.Utils.build_path_params_match(vars)
-
-      %Faultex{
-        id: "",
-        disable: disable,
-        params_match: params_match,
-        vars: vars,
-        host: host,
-        method: method,
-        path_match: path_match,
-        percentage: percentage,
-        headers: headers,
-        resp_status: resp_status,
-        resp_body: resp_body,
-        resp_headers: resp_headers,
-        resp_delay: resp_delay,
-        resp_handler: resp_handler,
-      }
+  def build_injectors(injectors) do
+    Enum.map(injectors, fn injector ->
+      do_build_injector(injector)
     end) ++
       [
         %Faultex{
@@ -139,15 +108,87 @@ defmodule Faultex do
       ]
   end
 
-  def to_underscore(nil) do
+  defp do_build_injector(injector_id) when is_atom(injector_id) do
+    injector = Application.fetch_env!(:faultex, injector_id)
+
+    path = Keyword.get(injector, :path, "*")
+    host = Keyword.get(injector, :host, "*")
+    method = Keyword.get(injector, :method, "GET")
+    headers = Keyword.get(injector, :headers, [])
+    percentage = Keyword.get(injector, :percentage, 100)
+
+    resp_body = Keyword.get(injector, :resp_body, "")
+    resp_status = Keyword.get(injector, :resp_status, 200)
+    resp_headers = Keyword.get(injector, :resp_headers, [])
+    resp_handler = Keyword.get(injector, :resp_handler, nil)
+    resp_delay = Keyword.get(injector, :resp_delay, 0)
+    disable = Keyword.get(injector, :disable, false)
+
+    {vars, path_match} = Plug.Router.Utils.build_path_match(path)
+    params_match = Plug.Router.Utils.build_path_params_match(vars)
+
+    %Faultex{
+      id: injector,
+      disable: disable,
+      params_match: params_match,
+      vars: vars,
+      host: host,
+      method: method,
+      path_match: path_match,
+      percentage: percentage,
+      headers: headers,
+      resp_status: resp_status,
+      resp_body: resp_body,
+      resp_headers: resp_headers,
+      resp_delay: resp_delay,
+      resp_handler: resp_handler
+    }
+  end
+
+  defp do_build_injector(injector) when is_map(injector) do
+    path = Map.get(injector, :path, "*")
+    host = Map.get(injector, :host, "*")
+    method = Map.get(injector, :method, "GET")
+    headers = Map.get(injector, :headers, [])
+    percentage = Map.get(injector, :percentage, 100)
+
+    resp_body = Map.get(injector, :resp_body, "")
+    resp_status = Map.get(injector, :resp_status, 200)
+    resp_headers = Map.get(injector, :resp_headers, [])
+    resp_handler = Map.get(injector, :resp_handler, nil)
+    resp_delay = Map.get(injector, :resp_delay, 0)
+    disable = Map.get(injector, :disable, false)
+
+    {vars, path_match} = Plug.Router.Utils.build_path_match(path)
+    params_match = Plug.Router.Utils.build_path_params_match(vars)
+
+    %Faultex{
+      id: injector,
+      disable: disable,
+      params_match: params_match,
+      vars: vars,
+      host: host,
+      method: method,
+      path_match: path_match,
+      percentage: percentage,
+      headers: headers,
+      resp_status: resp_status,
+      resp_body: resp_body,
+      resp_headers: resp_headers,
+      resp_delay: resp_delay,
+      resp_handler: resp_handler
+    }
+  end
+
+  defp to_underscore(nil) do
     quote do: _
   end
 
-  def to_underscore("*") do
+  defp to_underscore("*") do
     quote do: _
   end
 
-  def to_underscore(any) do
+  defp to_underscore(any) do
     any
   end
 
