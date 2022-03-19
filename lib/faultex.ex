@@ -37,7 +37,7 @@ defmodule Faultex do
               unquote(to_underscore(path_match)),
               req_headers
             ) do
-          disabled? = Application.get_env(:injex, :disable, false) || unquote(disable)
+          disabled? = Application.get_env(:faultex, :disable, false) || unquote(disable)
           roll = Faultex.roll(unquote(percentage))
           match_headers? = Faultex.match_req_headers?(req_headers, unquote(headers))
 

@@ -41,10 +41,10 @@ defmodule FaultexTest do
              ])
 
     # disabled
-    Application.put_env(:injex, :disable, true)
+    Application.put_env(:faultex, :disable, true)
 
     ExUnit.Callbacks.on_exit(fn ->
-      Application.put_env(:injex, :disable, false)
+      Application.put_env(:faultex, :disable, false)
     end)
 
     assert :pass =
