@@ -4,7 +4,6 @@
 
 Faultex is a simple Elixir fault injection library.
 
-
 ## USAGE
 
 Faultex can be use with the Plug and HTTPoison
@@ -54,20 +53,20 @@ curl
 
 ### Faultex.HTTPoison
 
-Add the :ex_fit to your project's mix.exs:
+Add the :faultex to your project's mix.exs:
 
 ```
 defp deps do
   [
     {:httpoison, "~> 1.0"},
-    {:ex_fit, "~> 0.1"}
+    {:faultex, "~> 0.1"}
   ]
 end
 ```
 
 ```elixir
 defmodule MyApp.HTTPoison do
-  use Injex.HTTPoison, injectors: [
+  use Faultex.HTTPoison, injectors: [
      %{
       path: "/test/*/bar",
       method: "GET",
@@ -94,10 +93,10 @@ res = HTTPoison.request!(:get, "test/foo/bar", body, headers)
 ## Use config.exs
 
 ```elixir
- config :ex_fit, 
+ config :faultex, 
    injectors: [RegisterFailure]
      
- config :ex_fit, RegisterFailure
+ config :faultex, RegisterFailure
    # Request matcher parameters
    host: "example.com"
    path: "/auth/*/*/register",
@@ -115,27 +114,31 @@ res = HTTPoison.request!(:get, "test/foo/bar", body, headers)
 ```
 
 ```elixir
-use Faultex.HTTPoison, Application.compile_env!(ex_fit, :injectors)
+use Faultex.HTTPoison, Application.compile_env!(faultex, :injectors)
 ```
 
 ### Global Parameters
 
-- disable disable all injectors
-- injectors list of injectors 
+- disable: if true, disable all injectors
+- injectors: list of injectors 
 
 ### Fault Injector Configuration
 
-- disable disable this injectors
-- host: default is `"*"`
-- path: default is `"*`
-- methd: エラーにマッチするメソッド 省略可能
-- exact: URLの完全一致でのみエラーにする 省略可能
-- header: エラーにマッチするヘッダー 省略不可能
-- percentage: パターンにマッチしたリクエストのうち何パーセントをエラーにするか
-- resp_status: エラーパターンにマッチした場合に返すhttpステータス
+In some request match parameters, you can set `"*"`. 
+which means matches all incoming parameters.
+
+
+- disable: optional. if true, disable this injectors. if omit this parameter, set default to `false`
+- host: optioanl. matches request host. if omit this parameters, set default to `"*"` 
+- path: optional. matches pattern for request path. You can use Plug.Router style path parameters like `:id` and wildcard pattern like `/*path` default is `*`
+- methd: optional. metches request method. atom or string. default is `"*"`
+- header: optional. matches request headers. default is `[]`
+- percentage: optional. default is `100`
+- resp_status: optional. 
 - resp_body: エラーパターンにマッチした場合に返すレスポンス 固定値のみ返せる
+- resp_headers: [],
 - resp_handler: レスポンスを返すmf 引数は１つ(connが渡ってくる) このオプションがある場合はresponseは使われない リクエスト内容に応じたエラーを返したい場合はこれを使う
-- resp_delay: レスポンスを返すまでに遅延させる値(ms)
+- resp_delay: optioanl. default is `0`
 
 ## TODO
 
@@ -145,8 +148,11 @@ use Faultex.HTTPoison, Application.compile_env!(ex_fit, :injectors)
 - [x] :headers are should parse list (cowboy style headers) [{key, value}].
 - [x] Allow response handlers
 - [x] Disaced config.exs
-- [x] Injex.Plug and Injex.HTTPoison are should have __using__ macro and compile routes dinamicaly
+- [x] Faultex.Plug and Faultex.HTTPoison are should have __using__ macro and compile routes dinamicaly
 - [x] Allow :disable key.
 - [] Allow :exact key.
 - [] - pass the path parameters to resp_handler
-- [] Injex.match returns {:ok, true, %Injex.Response{}}
+- [] match/5 check request path pattern
+- [] match/4, match/5 returns {:ok, true, %Faultex} | {:ok, false, nil}
+- [] debug log
+- [] example project
