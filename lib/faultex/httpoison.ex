@@ -19,9 +19,9 @@ defmodule Faultex.HTTPoison do
 
         case match(request) do
           %Faultex{resp_status: resp_status, resp_body: resp_body, resp_headers: resp_headers} =
-              injex ->
-            if injex.resp_handler != nil do
-              {m, f} = injex.resp_handler
+              faultex ->
+            if faultex.resp_handler != nil do
+              {m, f} = faultex.resp_handler
               uri = URI.parse(url)
 
               path =
@@ -33,7 +33,7 @@ defmodule Faultex.HTTPoison do
                 resp_status: resp_status,
                 resp_body: resp_body,
                 resp_header: resp_headers
-              } = apply(m, f, [uri.host, method, path, headers, injex])
+              } = apply(m, f, [uri.host, method, path, headers, faultex])
 
               {:ok,
                %HTTPoison.Response{

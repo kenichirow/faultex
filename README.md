@@ -127,18 +127,17 @@ use Faultex.HTTPoison, Application.compile_env!(faultex, :injectors)
 In some request match parameters, you can set `"*"`. 
 which means matches all incoming parameters.
 
-
 - disable: optional. if true, disable this injectors. if omit this parameter, set default to `false`
 - host: optioanl. matches request host. if omit this parameters, set default to `"*"` 
 - path: optional. matches pattern for request path. You can use Plug.Router style path parameters like `:id` and wildcard pattern like `/*path` default is `*`
 - methd: optional. metches request method. atom or string. default is `"*"`
 - header: optional. matches request headers. default is `[]`
-- percentage: optional. default is `100`
+- percentage: optional. default is `100`.
 - resp_status: optional. 
-- resp_body: エラーパターンにマッチした場合に返すレスポンス 固定値のみ返せる
-- resp_headers: [],
-- resp_handler: レスポンスを返すmf 引数は１つ(connが渡ってくる) このオプションがある場合はresponseは使われない リクエスト内容に応じたエラーを返したい場合はこれを使う
-- resp_delay: optioanl. default is `0`
+- resp_body: optional.
+- resp_headers: optional.
+- resp_handler: optioanl.
+- resp_delay: optioanl.
 
 ## TODO
 
