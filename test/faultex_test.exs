@@ -92,33 +92,4 @@ defmodule FaultexTest do
                matcher
              )
   end
-
-  test "resp_header functions should override resp_body, resp_header, resp_status" do
-    resp_handler = fn _req, _injex ->
-      %Faultex{
-        resp_status: 400,
-        resp_headers: [{"x-injex", "failed"}],
-        resp_body: "request_failed"
-      }
-    end
-
-    matcher = %Faultex{
-      percentage: 100,
-      headers: [{"test", "test1"}, {"x-fault-inject", "auth-failed"}],
-      resp_handler: {Faultex.Handler, :handle_response}
-    }
-
-    assert %Faultex{
-             resp_status: 400,
-             resp_headers: [{"x-injex", "failed"}],
-             resp_body: "request_failed"
-           } =
-             Matcher.match(
-               "https://example.com",
-               "POST",
-               ["auth", "test", "register"],
-               [{"test", "test1"}, {"x-fault-inject", "auth-failed"}],
-               matcher
-             )
-  end
 end

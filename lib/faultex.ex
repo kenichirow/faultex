@@ -27,10 +27,8 @@ defmodule Faultex do
       method = injector.method
       path_match = injector.path_match
       headers = injector.headers || []
-      resp_handler = injector.resp_handler
       percentage = injector.percentage
       disable = injector.disable || false
-      params_match = injector.params_match
 
       quote do
         def match(
@@ -43,21 +41,8 @@ defmodule Faultex do
           roll = Faultex.roll(unquote(percentage))
           match_headers? = Faultex.match_req_headers?(req_headers, unquote(headers))
 
-          # resp_handler はここで実行しない params_match
           if roll and not disabled? and match_headers? do
-            if unquote(resp_handler) != nil do
-              {m, f} = unquote(resp_handler)
-
-              apply(m, f, [
-                unquote(host),
-                unquote(method),
-                unquote(path_match),
-                req_headers,
-                unquote(Macro.escape(injector))
-              ])
-            else
-              unquote(Macro.escape(injector))
-            end
+            unquote(Macro.escape(injector))
           else
             :pass
           end
@@ -75,18 +60,14 @@ defmodule Faultex do
       def match(host, method, path_match, req_headers, injector) do
         # TODO host, method, path, headers のマッチをやる
         disabled? =
-          Application.get_env(:injector, :disable, false) || (Map.get(injector, :disable) || false)
+          Application.get_env(:injector, :disable, false) ||
+            (Map.get(injector, :disable) || false)
 
         roll = Faultex.roll(injector.percentage)
         match_headers? = Faultex.match_req_headers?(req_headers, injector.headers)
 
         if roll and not disabled? and match_headers? do
-          if injector.resp_handler != nil do
-            {m, f} = injector.resp_handler
-            apply(m, f, [host, method, path_match, req_headers, injector])
-          else
-            injector
-          end
+          injector
         else
           :pass
         end
@@ -94,27 +75,28 @@ defmodule Faultex do
 
       def do_match(host, method, path_match, req_headers, injector) do
         case match(host, method, path_match, req_headers) do
-          %Faultex{} = injector -> 
+          %Faultex{} = injector ->
             injector
+
           _ ->
             host_match? = Faultex.host_match?(host, injector.host)
             method_match? = Faultex.method_match?(method, injector.method)
             path_match? = Faultex.path_match?(method, injector.path)
             req_headers_match? = Faultex.match_req_headers?(req_headers, injector.headers)
+
             disabled? =
-              Application.get_env(:injector, :disable, false) || (Map.get(injector, :disable) || false)
+              Application.get_env(:injector, :disable, false) ||
+                (Map.get(injector, :disable) || false)
+
             roll = Faultex.roll(injector.percentage)
 
-            if host_match? and method_match? and path_match? and req_headers_match? and not disabled? and roll do
+            if host_match? and method_match? and path_match? and req_headers_match? and
+                 not disabled? and roll do
               injector
             else
               :pass
             end
         end
-      end
-
-      def do_match(_, _, _, _, injector) do
-        :pass
       end
 
       def get_injectors(), do: @__faultex_injectors__
@@ -218,7 +200,6 @@ defmodule Faultex do
 
   # FIXME
   def path_match?(path, expected) do
-    IO.inspect path
     path == expected
   end
 

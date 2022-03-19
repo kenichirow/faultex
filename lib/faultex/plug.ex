@@ -38,20 +38,31 @@ defmodule Faultex.Plug do
   end
 
   def send_resp(conn, injex) do
-    delay =
+    resp_delay =
       case Map.get(injex, :resp_delay) do
         nil -> 0
         delay -> delay
       end
 
-    Process.sleep(delay)
+    if resp_delay do
+      Process.sleep(injex.resp_delay)
+    end
 
-    # TODO: 
-    conn =
-      conn
-      |> Plug.Conn.send_resp(injex.resp_status, injex.resp_body)
+    if injex.resp_handler != nil do
+      # TODO pattern match error handling
+      {m, f} = injex.resp_handler
 
-    conn
+      %{
+        resp_status: resp_status,
+        resp_body: resp_body
+      } = apply(m, f, [conn.host, conn.method, conn.path_info, conn.request_headers, injex])
+
+      # TODO headers
+      Plug.Conn.send_resp(conn, resp_status, resp_body)
+    else
+      # TODO headers
+      Plug.Conn.send_resp(conn, injex.resp_status, injex.resp_body)
+    end
   end
 
   def put_resp_headers(conn, injex) do

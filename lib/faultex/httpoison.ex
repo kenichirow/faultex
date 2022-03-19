@@ -18,15 +18,41 @@ defmodule Faultex.HTTPoison do
         }
 
         case match(request) do
-          %Faultex{resp_status: resp_status, resp_body: resp_body, resp_headers: resp_headers} ->
-            {:ok,
-             %HTTPoison.Response{
-               body: resp_body,
-               headers: resp_headers,
-               request: request,
-               request_url: url,
-               status_code: resp_status
-             }}
+          %Faultex{resp_status: resp_status, resp_body: resp_body, resp_headers: resp_headers} =
+              injex ->
+            if injex.resp_handler != nil do
+              {m, f} = injex.resp_handler
+              uri = URI.parse(url)
+
+              path =
+                uri.path
+                |> String.split("/")
+                |> Enum.reject(&match?("", &1))
+
+              %{
+                resp_status: resp_status,
+                resp_body: resp_body,
+                resp_header: resp_headers
+              } = apply(m, f, [uri.host, method, path, headers, injex])
+
+              {:ok,
+               %HTTPoison.Response{
+                 body: resp_body,
+                 headers: resp_headers,
+                 request: request,
+                 request_url: url,
+                 status_code: resp_status
+               }}
+            else
+              {:ok,
+               %HTTPoison.Response{
+                 body: resp_body,
+                 headers: resp_headers,
+                 request: request,
+                 request_url: url,
+                 status_code: resp_status
+               }}
+            end
 
           :pass ->
             super(method, url, body, headers, options)
