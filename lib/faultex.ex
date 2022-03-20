@@ -166,7 +166,7 @@ defmodule Faultex do
     resp_delay = Map.get(injector, :resp_delay, 0)
     disable = Map.get(injector, :disable, false)
 
-    {vars, path_match} = Plug.Router.Utils.build_path_match(path)
+    {vars, path_match} = build_path_match(path)
     params_match = Plug.Router.Utils.build_path_params_match(vars)
 
     %Faultex{
@@ -185,6 +185,33 @@ defmodule Faultex do
       resp_delay: resp_delay,
       resp_handler: resp_handler
     }
+  end
+
+  def build_path_match(path_pattern) do
+    segments =
+      for seg <- String.split(path_pattern, "/"), seg != "" do
+        seg
+      end
+
+    process_segment([], [], Enum.reverse(segments))
+  end
+
+  def process_segment(vars, path_match, []) do
+    {vars, path_match}
+  end
+
+  def process_segment(vars, path_match, ["*" <> seg | rest]) do
+    key = String.to_atom(seg)
+    process_segment([key | vars], [{key, [], nil} | path_match], rest)
+  end
+
+  def process_segment(vars, path_match, [":" <> seg | rest]) do
+    key = String.to_atom(seg)
+    process_segment([key | vars], [{key, [], nil} | path_match], rest)
+  end
+
+  def process_segment(vars, path_match, [seg | rest]) do
+    process_segment(vars, [seg | path_match], rest)
   end
 
   def host_match?(_host, nil), do: true
