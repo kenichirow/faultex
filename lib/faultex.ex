@@ -8,7 +8,6 @@ defmodule Faultex do
     :host,
     :method,
     :path_match,
-    :vars,
     :headers,
     :percentage,
     :resp_status,
@@ -26,9 +25,10 @@ defmodule Faultex do
       host = injector.host
       method = injector.method
       path_match = injector.path_match
-      headers = injector.headers || []
+      headers = injector.headers
       percentage = injector.percentage
-      disable = injector.disable || false
+      disable = injector.disable
+      params_match = injector.params_match
 
       quote do
         def match(
@@ -39,7 +39,9 @@ defmodule Faultex do
             ) do
           disabled? = Application.get_env(:faultex, :disable, false) || unquote(disable)
           roll = Faultex.roll(unquote(percentage))
-          match_headers? = Faultex.match_req_headers?(req_headers, unquote(headers))
+          match_headers? = Faultex.req_headers_match?(req_headers, unquote(headers))
+          params = {:%{}, [], unquote(params_match)}
+          IO.inspect(Macro.to_string(params))
 
           if roll and not disabled? and match_headers? do
             unquote(Macro.escape(injector))
@@ -58,22 +60,6 @@ defmodule Faultex do
       @before_compile Faultex
 
       def match(host, method, path_match, req_headers, injector) do
-        # TODO host, method, path, headers のマッチをやる
-        disabled? =
-          Application.get_env(:injector, :disable, false) ||
-            (Map.get(injector, :disable) || false)
-
-        roll = Faultex.roll(injector.percentage)
-        match_headers? = Faultex.match_req_headers?(req_headers, injector.headers)
-
-        if roll and not disabled? and match_headers? do
-          injector
-        else
-          :pass
-        end
-      end
-
-      def do_match(host, method, path_match, req_headers, injector) do
         case match(host, method, path_match, req_headers) do
           %Faultex{} = injector ->
             injector
@@ -81,8 +67,8 @@ defmodule Faultex do
           _ ->
             host_match? = Faultex.host_match?(host, injector.host)
             method_match? = Faultex.method_match?(method, injector.method)
-            path_match? = Faultex.path_match?(method, injector.path)
-            req_headers_match? = Faultex.match_req_headers?(req_headers, injector.headers)
+            path_match? = Faultex.path_match?(path_match, injector.path_match)
+            req_headers_match? = Faultex.req_headers_match?(req_headers, injector.headers)
 
             disabled? =
               Application.get_env(:injector, :disable, false) ||
@@ -98,21 +84,12 @@ defmodule Faultex do
             end
         end
       end
-
-      def get_injectors(), do: @__faultex_injectors__
     end
   end
 
-  # Generate struct for pattern match from config.exs
   def build_injectors(injectors) do
-    Enum.map(injectors, fn injector ->
-      do_build_injector(injector)
-    end) ++
-      [
-        %Faultex{
-          disable: true
-        }
-      ]
+    injectors = Enum.map(injectors, &do_build_injector(&1))
+    injectors ++ [%Faultex{disable: true}]
   end
 
   defp do_build_injector(injector_id) when is_atom(injector_id) do
@@ -120,8 +97,8 @@ defmodule Faultex do
 
     path = Keyword.get(injector, :path, "*")
     host = Keyword.get(injector, :host, "*")
-    method = Keyword.get(injector, :method, "GET")
-    headers = Keyword.get(injector, :headers, [])
+    method = Map.get(injector, :method, "*")
+    headers = Keyword.get(injector, :headers) || []
     percentage = Keyword.get(injector, :percentage, 100)
 
     resp_body = Keyword.get(injector, :resp_body, "")
@@ -129,16 +106,15 @@ defmodule Faultex do
     resp_headers = Keyword.get(injector, :resp_headers, [])
     resp_handler = Keyword.get(injector, :resp_handler, nil)
     resp_delay = Keyword.get(injector, :resp_delay, 0)
-    disable = Keyword.get(injector, :disable, false)
+    disable = Keyword.get(injector, :disable) || false
 
-    {vars, path_match} = Plug.Router.Utils.build_path_match(path)
+    {vars, path_match} = build_path_match(path)
     params_match = Plug.Router.Utils.build_path_params_match(vars)
 
     %Faultex{
       id: injector,
       disable: disable,
       params_match: params_match,
-      vars: vars,
       host: host,
       method: method,
       path_match: path_match,
@@ -155,8 +131,8 @@ defmodule Faultex do
   defp do_build_injector(injector) when is_map(injector) do
     path = Map.get(injector, :path, "*")
     host = Map.get(injector, :host, "*")
-    method = Map.get(injector, :method, "GET")
-    headers = Map.get(injector, :headers, [])
+    method = Map.get(injector, :method, "*")
+    headers = Map.get(injector, :headers) || []
     percentage = Map.get(injector, :percentage, 100)
 
     resp_body = Map.get(injector, :resp_body, "")
@@ -164,16 +140,14 @@ defmodule Faultex do
     resp_headers = Map.get(injector, :resp_headers, [])
     resp_handler = Map.get(injector, :resp_handler, nil)
     resp_delay = Map.get(injector, :resp_delay, 0)
-    disable = Map.get(injector, :disable, false)
+    disable = Map.get(injector, :disable) || false
 
     {vars, path_match} = build_path_match(path)
-    params_match = Plug.Router.Utils.build_path_params_match(vars)
+    params_match = build_path_params_match([], vars)
 
     %Faultex{
       id: injector,
-      disable: disable,
       params_match: params_match,
-      vars: vars,
       host: host,
       method: method,
       path_match: path_match,
@@ -183,17 +157,48 @@ defmodule Faultex do
       resp_body: resp_body,
       resp_headers: resp_headers,
       resp_delay: resp_delay,
-      resp_handler: resp_handler
+      resp_handler: resp_handler,
+      disable: disable
     }
   end
 
-  def build_path_match(path_pattern) do
-    segments =
-      for seg <- String.split(path_pattern, "/"), seg != "" do
-        seg
-      end
+  def build_path_params_match(params_matches, []) do
+    params_matches
+  end
 
-    process_segment([], [], Enum.reverse(segments))
+  def build_path_params_match(params_matches, [var | rest]) when is_atom(var) do
+    case Atom.to_string(var) do
+      "_" <> _ ->
+        build_path_params_match(params_matches, rest)
+
+      key ->
+        build_path_params_match([{key, {var, [], nil}} | params_matches], rest)
+    end
+  end
+
+  def build_path_params_match(params_matches, [var | rest]) when is_binary(var) do
+    case var do
+      "_" <> _ ->
+        build_path_params_match(params_matches, rest)
+
+      _ ->
+        build_path_params_match([{var, {String.to_atom(var), [], nil}} | params_matches], rest)
+    end
+  end
+
+  def build_path_params_match(params_matches, rest) do
+    build_path_params_match(params_matches, rest)
+  end
+
+  def build_path_match(path_pattern) do
+    segments = path_pattern |> split() |> Enum.reverse()
+    process_segment([], [], segments)
+  end
+
+  def split(path_pattern) do
+    for seg <- String.split(path_pattern, "/"), seg != "" do
+      seg
+    end
   end
 
   def process_segment(vars, path_match, []) do
@@ -224,10 +229,23 @@ defmodule Faultex do
 
   def path_match?(_path, nil), do: true
   def path_match?(_path, "*"), do: true
-
   # FIXME
   def path_match?(path, expected) do
     path == expected
+  end
+
+  def req_headers_match?(_req_headers, []) do
+    true
+  end
+
+  def req_headers_match?(_req_headers, nil) do
+    true
+  end
+
+  def req_headers_match?(req_headers, headers) do
+    Enum.all?(headers, fn header ->
+      header in req_headers
+    end)
   end
 
   defp to_underscore(nil) do
@@ -240,12 +258,6 @@ defmodule Faultex do
 
   defp to_underscore(any) do
     any
-  end
-
-  def match_req_headers?(req_headers, headers) do
-    Enum.all?(headers, fn header ->
-      header in req_headers
-    end)
   end
 
   def roll(100), do: true

@@ -29,14 +29,14 @@ defmodule FaultexTest do
 
     # Method does not match
     assert :pass ==
-             Matcher.match("*", "GET", ["auth", "test", "register"], [
+             Matcher.match("*", "GET", ["test"], [
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
              ])
 
     # Headers does not match
     assert :pass ==
-             Matcher.match("*", "POST", ["auth", "test", "register"], [
+             Matcher.match("*", "GET", ["test"], [
                {"content-type", "application/json"}
              ])
 
@@ -78,7 +78,7 @@ defmodule FaultexTest do
              Matcher.match(
                "https://example.com",
                "POST",
-               ["auth", "test", "register"],
+               ["test"],
                [{"x-fault-inject", "auth-failed"}],
                matcher
              )
