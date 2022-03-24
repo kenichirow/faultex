@@ -26,7 +26,12 @@ defmodule FaultexTest do
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
              ])
+    f = Matcher.match("*", "POST", ["auth", "test", "register"], [
+               {"x-fault-inject", "auth-failed"},
+               {"content-type", "application/json"}
+             ])
 
+    IO.inspect f
     # Method does not match
     assert :pass ==
              Matcher.match("*", "GET", ["test"], [
