@@ -26,7 +26,7 @@ defmodule Faultex.PlugTest do
     end
   end
 
-  test "When request to Plug are matches Faultex.Mathers, It must return error" do
+  test "Faultex.Plug" do
     conn = Plug.Test.conn("POST", "/auth/test/register")
     conn = Plug.Conn.put_req_header(conn, "content-type", "application/json")
     conn = MyRouter.call(conn, MyRouter.init(matcher: MyRouter))
