@@ -15,7 +15,8 @@ defmodule Faultex do
     :resp_handler,
     :resp_body,
     :resp_delay,
-    :params_match
+    :params_match,
+    :params
   ]
 
   defmacro __before_compile__(env) do
@@ -29,6 +30,17 @@ defmodule Faultex do
       percentage = injector.percentage
       disable = injector.disable
       params_match = injector.params_match
+      params_match = quote bind_quoted: [
+        params_match: params_match
+      ] do
+        {:%{}, [], params_match}
+      end
+
+      injector = %Faultex{injector | params_match: nil, path_match: nil}
+
+      update_injector = quote do
+        injector = %Faultex{unquote(Macro.escape(injector)) | params: params}
+      end
 
       quote do
         def match(
@@ -40,11 +52,11 @@ defmodule Faultex do
           disabled? = Application.get_env(:faultex, :disable, false) || unquote(disable)
           roll = Faultex.roll(unquote(percentage))
           match_headers? = Faultex.req_headers_match?(req_headers, unquote(headers))
-          params = {:%{}, [], unquote(params_match)}
-          IO.inspect(Macro.to_string(params))
+          params = unquote(params_match)
+          unquote(update_injector)
 
           if roll and not disabled? and match_headers? do
-            unquote(Macro.escape(injector))
+            injector
           else
             :pass
           end
@@ -109,7 +121,8 @@ defmodule Faultex do
     disable = Keyword.get(injector, :disable) || false
 
     {vars, path_match} = build_path_match(path)
-    params_match = Plug.Router.Utils.build_path_params_match(vars)
+    
+    params_match = build_path_params_match([], vars)
 
     %Faultex{
       id: injector,
