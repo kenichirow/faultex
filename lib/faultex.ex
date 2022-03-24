@@ -15,7 +15,6 @@ defmodule Faultex do
     :resp_handler,
     :resp_body,
     :resp_delay,
-    :params_match
   ]
 
   defmacro __before_compile__(env) do
@@ -28,7 +27,6 @@ defmodule Faultex do
       headers = injector.headers
       percentage = injector.percentage
       disable = injector.disable
-      params_match = injector.params_match
 
       quote do
         def match(
@@ -40,8 +38,6 @@ defmodule Faultex do
           disabled? = Application.get_env(:faultex, :disable, false) || unquote(disable)
           roll = Faultex.roll(unquote(percentage))
           match_headers? = Faultex.req_headers_match?(req_headers, unquote(headers))
-          params = {:%{}, [], unquote(params_match)}
-          IO.inspect(Macro.to_string(params))
 
           if roll and not disabled? and match_headers? do
             unquote(Macro.escape(injector))
@@ -108,13 +104,11 @@ defmodule Faultex do
     resp_delay = Keyword.get(injector, :resp_delay, 0)
     disable = Keyword.get(injector, :disable) || false
 
-    {vars, path_match} = build_path_match(path)
-    params_match = Plug.Router.Utils.build_path_params_match(vars)
+    {_, path_match} = build_path_match(path)
 
     %Faultex{
       id: injector,
       disable: disable,
-      params_match: params_match,
       host: host,
       method: method,
       path_match: path_match,
@@ -142,12 +136,10 @@ defmodule Faultex do
     resp_delay = Map.get(injector, :resp_delay, 0)
     disable = Map.get(injector, :disable) || false
 
-    {vars, path_match} = build_path_match(path)
-    params_match = build_path_params_match([], vars)
+    {_, path_match} = build_path_match(path)
 
     %Faultex{
       id: injector,
-      params_match: params_match,
       host: host,
       method: method,
       path_match: path_match,
@@ -207,12 +199,12 @@ defmodule Faultex do
 
   def process_segment(vars, path_match, ["*" <> seg | rest]) do
     key = String.to_atom(seg)
-    process_segment([key | vars], [{key, [], nil} | path_match], rest)
+    process_segment([key | vars], [{:_, [], nil} | path_match], rest)
   end
 
   def process_segment(vars, path_match, [":" <> seg | rest]) do
     key = String.to_atom(seg)
-    process_segment([key | vars], [{key, [], nil} | path_match], rest)
+    process_segment([key | vars], [{:_, [], nil} | path_match], rest)
   end
 
   def process_segment(vars, path_match, [seg | rest]) do
