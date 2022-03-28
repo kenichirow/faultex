@@ -21,22 +21,22 @@ defmodule FaultexTest do
 
   test "match/4 are compile time match configures" do
     # matches
-    assert %Faultex{} =
-             Matcher.match("*", "POST", ["auth", "test", "register"], [
+    assert {true, %Faultex{}} =
+             Matcher.match?("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
              ])
 
     # Method does not match
-    assert :pass ==
-             Matcher.match("*", "GET", ["test"], [
+    assert {false, _} =
+             Matcher.match?("*", "GET", ["test"], [
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
              ])
 
     # Headers does not match
-    assert :pass ==
-             Matcher.match("*", "GET", ["test"], [
+    assert {false, _} =
+             Matcher.match?("*", "GET", ["test"], [
                {"content-type", "application/json"}
              ])
 
@@ -47,15 +47,15 @@ defmodule FaultexTest do
       Application.put_env(:faultex, :disable, false)
     end)
 
-    assert :pass =
-             Matcher.match("*", "POST", ["auth", "test", "register"], [
+    assert {false, _} =
+             Matcher.match?("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
              ])
   end
 
   test "match/5 are runtime match" do
-    assert %Faultex{} =
+    assert {true, %Faultex{}} =
              Matcher.match(
                "https://example.com",
                "POST",
@@ -74,7 +74,7 @@ defmodule FaultexTest do
       headers: [{"test", "test1"}, {"x-fault-inject", "auth-failed"}]
     }
 
-    assert :pass =
+    assert {false, _} =
              Matcher.match(
                "https://example.com",
                "POST",
@@ -83,7 +83,7 @@ defmodule FaultexTest do
                matcher
              )
 
-    assert %Faultex{} =
+    assert {true, %Faultex{}} =
              Matcher.match(
                "https://example.com",
                "POST",

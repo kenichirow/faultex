@@ -14,7 +14,7 @@ defmodule Faultex do
     :resp_headers,
     :resp_handler,
     :resp_body,
-    :resp_delay,
+    :resp_delay
   ]
 
   defmacro __before_compile__(env) do
@@ -29,7 +29,7 @@ defmodule Faultex do
       disable = injector.disable
 
       quote do
-        def match(
+        def match?(
               unquote(to_underscore(host)),
               unquote(to_underscore(method)),
               unquote(to_underscore(path_match)),
@@ -40,9 +40,9 @@ defmodule Faultex do
           match_headers? = Faultex.req_headers_match?(req_headers, unquote(headers))
 
           if roll and not disabled? and match_headers? do
-            unquote(Macro.escape(injector))
+            {true, unquote(Macro.escape(injector))}
           else
-            :pass
+            {false, nil}
           end
         end
       end
@@ -56,8 +56,8 @@ defmodule Faultex do
       @before_compile Faultex
 
       def match(host, method, path_match, req_headers, injector) do
-        case match(host, method, path_match, req_headers) do
-          %Faultex{} = injector ->
+        case match?(host, method, path_match, req_headers) do
+          {true, %Faultex{}} = injector ->
             injector
 
           _ ->
@@ -74,9 +74,9 @@ defmodule Faultex do
 
             if host_match? and method_match? and path_match? and req_headers_match? and
                  not disabled? and roll do
-              injector
+              {true, injector}
             else
-              :pass
+              {false, nil}
             end
         end
       end

@@ -17,7 +17,7 @@ defmodule Injex.MixProject do
     ]
   end
 
- defp package do
+  defp package do
     [
       description: "A Fault injection library which work with Plug and HTTPoison",
       maintainers: ["kenichirow"],

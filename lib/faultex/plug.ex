@@ -23,7 +23,7 @@ defmodule Faultex.Plug do
     matcher = opts[:matcher]
 
     case match(matcher, conn) do
-      %Faultex{} = faultex ->
+      {true, faultex} ->
         conn =
           conn
           |> put_resp_headers(faultex)
@@ -32,7 +32,7 @@ defmodule Faultex.Plug do
         conn = Plug.Conn.halt(conn)
         conn
 
-      :pass ->
+      {false, _} ->
         conn
     end
   end
@@ -83,6 +83,6 @@ defmodule Faultex.Plug do
       req_headers: req_headers
     } = conn
 
-    matcher.match("*", method, path_info, req_headers)
+    matcher.match?("*", method, path_info, req_headers)
   end
 end
