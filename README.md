@@ -2,25 +2,26 @@
 
 ![ci](https://github.com/kenichirow/faultex/actions/workflows/main.yml/badge.svg)
 
-Faultex is a simple Elixir fault injection library.
-
-## USAGE
-
-Faultex can be use with the Plug and HTTPoison
+Faultex is simple Fault injection library.
 
 
-### Faultex.Plug
-
-Add the :faultex to your project's mix.exs:
+## Installation
 
 ```
 defp deps do
   [
     {:plug, "~> 1.0"},
+    {:httpoison, "~> 1.0"},
     {:faultex, "~> 0.1"}
   ]
 end
 ```
+
+## Usage
+
+### Configure via Faultex.Plug Options
+
+Add Faultex.Plug to your application's Router
 
 ```elixir
   defmodule MyRouter do
@@ -36,61 +37,11 @@ end
       resp_delay: 1000
      }
     ]
-     
-    get "test/:foo/bar" do
-      # returns 401 to client
-      # never call this route
-      ...
-    end
   end
 ```
 
-```bash
-curl 
-> res
-```
 
-
-### Faultex.HTTPoison
-
-Add the :faultex to your project's mix.exs:
-
-```
-defp deps do
-  [
-    {:httpoison, "~> 1.0"},
-    {:faultex, "~> 0.1"}
-  ]
-end
-```
-
-```elixir
-defmodule MyApp.HTTPoison do
-  use Faultex.HTTPoison, injectors: [
-     %{
-      path: "/test/*/bar",
-      method: "GET",
-      headers: [{"X-Fault-Inject", "auth-failed"}],
-      percentage: 100,
-      resp_status: 401,
-      resp_body: Jason.encode!(%{message: "Autharization failed"}),
-      resp_headers: [],
-      resp_delay: 1000
-      }
-    ]
-end
-
-alias MyApp.HTTPoison as HTTPoison
-
-# receive 401
-res = HTTPoison.request!(:get, "test/foo/bar", body, headers)
-
-> res%{
-}
-```
-
-
-## Use config.exs
+###  Use config.exs
 
 ```elixir
  config :faultex, 
@@ -114,31 +65,10 @@ res = HTTPoison.request!(:get, "test/foo/bar", body, headers)
 ```
 
 ```elixir
-use Faultex.HTTPoison, Application.compile_env!(faultex, :injectors)
+  defmodule MyRouter do
+    use Faultex.Plug, Application.compile_env!(faultex, :injectors)
+  end
 ```
-
-### Global Parameters
-
-- disable: if true, disable all injectors
-- injectors: list of injectors 
-
-### Fault Injector Configuration
-
-In some request match parameters, you can set `"*"`. 
-which means matches all incoming parameters.
-
-
-- disable: optional. if true, disable this injectors. if omit this parameter, set default to `false`
-- host: optioanl. matches request host. if omit this parameters, set default to `"*"` 
-- path: optional. matches pattern for request path. You can use Plug.Router style path parameters like `:id` and wildcard pattern like `/*path` default is `*`
-- methd: optional. metches request method. atom or string. default is `"*"`
-- header: optional. matches request headers. default is `[]`
-- percentage: optional. default is `100`
-- resp_status: optional. 
-- resp_body: エラーパターンにマッチした場合に返すレスポンス 固定値のみ返せる
-- resp_headers: [],
-- resp_handler: レスポンスを返すmf 引数は１つ(connが渡ってくる) このオプションがある場合はresponseは使われない リクエスト内容に応じたエラーを返したい場合はこれを使う
-- resp_delay: optioanl. default is `0`
 
 ## TODO
 

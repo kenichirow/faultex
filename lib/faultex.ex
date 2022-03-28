@@ -1,5 +1,44 @@
 defmodule Faultex do
   @moduledoc """
+
+  ```elixir
+
+  defmodule MyMatcher do
+    use Faultex, injectors: [ 
+      %Faultex{
+       # Matches all requests.
+        delay: 1_000,
+      }
+    ]
+  end
+
+  {true, %Faultex} = MyMatcher.match?("*", "GET", ["path", "to", "app"], [])
+
+  ```
+
+  ## Configulation
+
+  You can pass these options to `use Faultex`
+
+  - disable: if true, disable all injectors
+  - injectors: list of Injectors 
+
+  ### Injector
+
+  In some parameters, you can set the `"*"`. 
+  which means matches all incoming parameters.
+
+  - disable: optional. if true, disable this injectors. if omit this parameter, set default to `false`
+  - host: optioanl. matches request host. if omit this parameters, set default to `"*"` 
+  - path: optional. matches pattern for request path. You can use Plug.Router style path parameters like `:id` and wildcard pattern like `/*path` default is `*`
+  - methd: optional. metches request method. atom or string. default is `"*"`
+  - header: optional. matches request headers. default is `[]`
+  - percentage: optional. default is `100`.
+  - resp_status: optional. 
+  - resp_body: optional.
+  - resp_headers: optional.
+  - resp_handler: optional.
+  - resp_delay: optioanl. default is `0`
   """
 
   defstruct [

@@ -7,7 +7,13 @@ defmodule Injex.MixProject do
       version: "0.1.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      name: "Faultex",
+      source_url: "https://github.com/kenichirow/faultex",
+      docs: [
+        main: "Faultex",
+        extras: ["README.md"]
+      ]
     ]
   end
 
