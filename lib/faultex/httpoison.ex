@@ -19,8 +19,11 @@ defmodule Faultex.HTTPoison do
 
         case match(request) do
           {true,
-           %Faultex{resp_status: resp_status, resp_body: resp_body, resp_headers: resp_headers} =
-               faultex} ->
+           %Faultex.Injector{
+             resp_status: resp_status,
+             resp_body: resp_body,
+             resp_headers: resp_headers
+           } = faultex} ->
             if faultex.resp_handler != nil do
               {m, f} = faultex.resp_handler
               uri = URI.parse(url)

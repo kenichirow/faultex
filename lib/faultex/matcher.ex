@@ -3,35 +3,29 @@ defmodule Faultex.Matcher do
   """
 
   defstruct [
-    :id,
     :disable,
-    :host,
-    :method,
+    :host_match,
+    :method_match,
     :path_match,
     :headers,
-    :percentage,
-    :resp_status,
-    :resp_headers,
-    :resp_handler,
-    :resp_body,
-    :resp_delay
+    :percentage
   ]
 
   defmacro __before_compile__(env) do
     injectors = Module.get_attribute(env.module, :__faultex_injectors__)
 
-    for injector <- Faultex.Matcher.build_injectors(injectors) do
-      host = injector.host
-      method = injector.method
-      path_match = injector.path_match
-      headers = injector.headers
-      percentage = injector.percentage
-      disable = injector.disable
+    for {matcher, injector} <- Faultex.Matcher.build_matchers(injectors) do
+      host_match = matcher.host_match
+      method_match = matcher.method_match
+      path_match = matcher.path_match
+      headers = matcher.headers
+      percentage = matcher.percentage
+      disable = matcher.disable
 
       quote do
         def match?(
-              unquote(to_underscore(host)),
-              unquote(to_underscore(method)),
+              unquote(to_underscore(host_match)),
+              unquote(to_underscore(method_match)),
               unquote(to_underscore(path_match)),
               req_headers
             ) do
@@ -49,13 +43,12 @@ defmodule Faultex.Matcher do
     end
   end
 
-
-  def build_injectors(injectors) do
-    injectors = Enum.map(injectors, &do_build_injector(&1))
-    injectors ++ [%Faultex{disable: true}]
+  def build_matchers(injectors) do
+    matchers = Enum.map(injectors, &do_build_matcher(&1))
+    matchers ++ [{%Faultex.Matcher{disable: true}, %Faultex.Injector{}}]
   end
 
-  defp do_build_injector(injector_id) when is_atom(injector_id) do
+  defp do_build_matcher(injector_id) when is_atom(injector_id) do
     injector = Application.fetch_env!(:faultex, injector_id)
 
     path = Keyword.get(injector, :path, "*")
@@ -73,23 +66,32 @@ defmodule Faultex.Matcher do
 
     {_, path_match} = build_path_match(path)
 
-    %Faultex{
-      id: injector,
-      disable: disable,
-      host: host,
-      method: method,
-      path_match: path_match,
-      percentage: percentage,
-      headers: headers,
-      resp_status: resp_status,
-      resp_body: resp_body,
-      resp_headers: resp_headers,
-      resp_delay: resp_delay,
-      resp_handler: resp_handler
+    {
+      %Faultex.Matcher{
+        host_match: host,
+        method_match: method,
+        path_match: path_match,
+        percentage: percentage,
+        headers: headers,
+        disable: disable
+      },
+      %Faultex.Injector{
+        host: host,
+        method: method,
+        path: path,
+        percentage: percentage,
+        headers: headers,
+        disable: disable,
+        resp_status: resp_status,
+        resp_body: resp_body,
+        resp_headers: resp_headers,
+        resp_delay: resp_delay,
+        resp_handler: resp_handler
+      }
     }
   end
 
-  defp do_build_injector(injector) when is_map(injector) do
+  defp do_build_matcher(injector) when is_map(injector) do
     path = Map.get(injector, :path, "*")
     host = Map.get(injector, :host, "*")
     method = Map.get(injector, :method, "*")
@@ -105,19 +107,28 @@ defmodule Faultex.Matcher do
 
     {_, path_match} = build_path_match(path)
 
-    %Faultex{
-      id: injector,
-      host: host,
-      method: method,
-      path_match: path_match,
-      percentage: percentage,
-      headers: headers,
-      resp_status: resp_status,
-      resp_body: resp_body,
-      resp_headers: resp_headers,
-      resp_delay: resp_delay,
-      resp_handler: resp_handler,
-      disable: disable
+    {
+      %Faultex.Matcher{
+        host_match: host,
+        method_match: method,
+        path_match: path_match,
+        percentage: percentage,
+        headers: headers,
+        disable: disable
+      },
+      %Faultex.Injector{
+        host: host,
+        method: method,
+        path: path,
+        percentage: percentage,
+        headers: headers,
+        disable: disable,
+        resp_status: resp_status,
+        resp_body: resp_body,
+        resp_headers: resp_headers,
+        resp_delay: resp_delay,
+        resp_handler: resp_handler
+      }
     }
   end
 

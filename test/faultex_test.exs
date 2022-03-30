@@ -21,7 +21,7 @@ defmodule FaultexTest do
 
   test "match/4 are compile time match configures" do
     # matches
-    assert {true, %Faultex{}} =
+    assert {true, %Faultex.Injector{}} =
              Matcher.match?("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
@@ -55,7 +55,7 @@ defmodule FaultexTest do
   end
 
   test "match/5 are runtime match" do
-    assert {true, %Faultex{}} =
+    assert {true, %Faultex.Injector{}} =
              Matcher.match(
                "https://example.com",
                "POST",
@@ -64,12 +64,12 @@ defmodule FaultexTest do
                  {"x-fault-inject", "auth-failed"},
                  {"content-type", "application/json"}
                ],
-               %Faultex{percentage: 100, headers: [{"x-fault-inject", "auth-failed"}]}
+               %Faultex.Matcher{percentage: 100, headers: [{"x-fault-inject", "auth-failed"}]}
              )
   end
 
   test "multiple header match" do
-    matcher = %Faultex{
+    matcher = %Faultex.Injector{
       percentage: 100,
       headers: [{"test", "test1"}, {"x-fault-inject", "auth-failed"}]
     }
@@ -83,7 +83,7 @@ defmodule FaultexTest do
                matcher
              )
 
-    assert {true, %Faultex{}} =
+    assert {true, %Faultex.Injector{}} =
              Matcher.match(
                "https://example.com",
                "POST",
