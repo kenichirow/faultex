@@ -43,45 +43,44 @@ defmodule Faultex.Matcher do
     end
   end
 
+  defp fill_matcher_params(injector) do
+    path = Map.get(injector, :path, "*")
+    host = Map.get(injector, :host, "*")
+    method = Map.get(injector, :method, "*")
+    headers = Map.get(injector, :headers) || []
+    percentage = Map.get(injector, :percentage, 100)
+    {_, path_match} = build_path_match(path)
+    disable = Map.get(injector, :disable) || false
+
+    %Faultex.Matcher{
+      host_match: host,
+      method_match: method,
+      path_match: path_match,
+      percentage: percentage,
+      headers: headers,
+      disable: disable
+    }
+  end
+
   def build_matchers(injectors) do
     matchers = Enum.map(injectors, &do_build_matcher(&1))
-    matchers ++ [{%Faultex.Matcher{disable: true}, %Faultex.Injector{}}]
+    matchers ++ [{%Faultex.Matcher{disable: true}, %Faultex.Injector.FaultInjector{}}]
   end
 
   defp do_build_matcher(injector_id) when is_atom(injector_id) do
-    injector = Application.fetch_env!(:faultex, injector_id)
+    do_build_matcher(Application.fetch_env!(:faultex, injector_id))
+  end
 
-    path = Keyword.get(injector, :path, "*")
-    host = Keyword.get(injector, :host, "*")
-    method = Map.get(injector, :method, "*")
-    headers = Keyword.get(injector, :headers) || []
-    percentage = Keyword.get(injector, :percentage, 100)
-
-    resp_body = Keyword.get(injector, :resp_body, "")
-    resp_status = Keyword.get(injector, :resp_status, 200)
-    resp_headers = Keyword.get(injector, :resp_headers, [])
-    resp_handler = Keyword.get(injector, :resp_handler, nil)
-    resp_delay = Keyword.get(injector, :resp_delay, 0)
-    disable = Keyword.get(injector, :disable) || false
-
-    {_, path_match} = build_path_match(path)
+  defp do_build_matcher(injector) when is_struct(injector, Faultex.Injector.FaultInjector) do
+    resp_body = Map.get(injector, :resp_body, "")
+    resp_status = Map.get(injector, :resp_status, 200)
+    resp_headers = Map.get(injector, :resp_headers, [])
+    resp_handler = Map.get(injector, :resp_handler, nil)
+    resp_delay = Map.get(injector, :resp_delay, 0)
 
     {
-      %Faultex.Matcher{
-        host_match: host,
-        method_match: method,
-        path_match: path_match,
-        percentage: percentage,
-        headers: headers,
-        disable: disable
-      },
-      %Faultex.Injector{
-        host: host,
-        method: method,
-        path: path,
-        percentage: percentage,
-        headers: headers,
-        disable: disable,
+      fill_matcher_params(injector),
+      %Faultex.Injector.FaultInjector{
         resp_status: resp_status,
         resp_body: resp_body,
         resp_headers: resp_headers,
@@ -91,38 +90,34 @@ defmodule Faultex.Matcher do
     }
   end
 
-  defp do_build_matcher(injector) when is_map(injector) do
-    path = Map.get(injector, :path, "*")
-    host = Map.get(injector, :host, "*")
-    method = Map.get(injector, :method, "*")
-    headers = Map.get(injector, :headers) || []
-    percentage = Map.get(injector, :percentage, 100)
+  defp do_build_matcher(injector) when is_struct(injector, Faultex.Injector.SlowInjector) do
+    {
+      fill_matcher_params(injector),
+      %Faultex.Injector.SlowInjector{
+        resp_delay: Map.get(injector, :resp_delay, 0)
+      }
+    }
+  end
 
+  defp do_build_matcher(injector) when is_struct(injector, Faultex.Injector.RejectInjector) do
+    {
+      fill_matcher_params(injector),
+      %Faultex.Injector.RejectInjector{
+        resp_delay: Map.get(injector, :resp_delay, 0)
+      }
+    }
+  end
+
+  defp do_build_matcher(injector) when is_map(injector) do
     resp_body = Map.get(injector, :resp_body, "")
     resp_status = Map.get(injector, :resp_status, 200)
     resp_headers = Map.get(injector, :resp_headers, [])
     resp_handler = Map.get(injector, :resp_handler, nil)
     resp_delay = Map.get(injector, :resp_delay, 0)
-    disable = Map.get(injector, :disable) || false
-
-    {_, path_match} = build_path_match(path)
 
     {
-      %Faultex.Matcher{
-        host_match: host,
-        method_match: method,
-        path_match: path_match,
-        percentage: percentage,
-        headers: headers,
-        disable: disable
-      },
-      %Faultex.Injector{
-        host: host,
-        method: method,
-        path: path,
-        percentage: percentage,
-        headers: headers,
-        disable: disable,
+      fill_matcher_params(injector),
+      %Faultex.Injector.FaultInjector{
         resp_status: resp_status,
         resp_body: resp_body,
         resp_headers: resp_headers,

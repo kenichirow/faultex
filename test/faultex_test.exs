@@ -4,7 +4,7 @@ defmodule FaultexTest do
   defmodule Matcher do
     use Faultex,
       injectors: [
-        %Faultex.Injector{
+        %Faultex.Injector.FaultInjector{
           host: "*",
           path: "/auth/:id/*path",
           method: "POST",
@@ -12,7 +12,13 @@ defmodule FaultexTest do
           percentage: 100,
           resp_headers: [],
           resp_status: 401,
-          resp_body: "unauthorized",
+          resp_body: "unauthorized"
+        },
+        %Faultex.Injector.SlowInjector{
+          host: "*",
+          path: "/slow",
+          method: "GET",
+          percentage: 100,
           resp_delay: 1000
         }
       ]
@@ -20,7 +26,7 @@ defmodule FaultexTest do
 
   test "match/4 are compile time match configures" do
     # matches
-    assert {true, %Faultex.Injector{}} =
+    assert {true, %Faultex.Injector.FaultInjector{}} =
              Matcher.match?("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
@@ -36,6 +42,12 @@ defmodule FaultexTest do
     # Headers does not match
     assert {false, _} =
              Matcher.match?("*", "GET", ["test"], [
+               {"content-type", "application/json"}
+             ])
+
+    # Slow
+    assert {true, %Faultex.Injector.SlowInjector{}} =
+             Matcher.match?("*", "GET", ["slow"], [
                {"content-type", "application/json"}
              ])
 

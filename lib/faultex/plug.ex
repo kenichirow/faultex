@@ -23,51 +23,30 @@ defmodule Faultex.Plug do
     matcher = opts[:matcher]
 
     case match(matcher, conn) do
-      {true, faultex} ->
-        conn =
-          conn
-          |> put_resp_headers(faultex)
-          |> send_resp(faultex)
-
-        conn = Plug.Conn.halt(conn)
+      {true, %Faultex.Injector.SlowInjector{} = slow_injector} ->
+        _ = Faultex.inject(slow_injector)
         conn
+
+      {true, injector} ->
+        send_resp_and_halt(conn, injector)
 
       {false, _} ->
         conn
     end
   end
 
-  def send_resp(conn, faultex) do
-    resp_delay =
-      case Map.get(faultex, :resp_delay) do
-        nil -> 0
-        delay -> delay
-      end
+  def send_resp_and_halt(conn, injector) do
+    resp = Faultex.inject(injector)
 
-    if resp_delay do
-      Process.sleep(faultex.resp_delay)
-    end
-
-    if faultex.resp_handler != nil do
-      # TODO pattern match error handling
-      {m, f} = faultex.resp_handler
-
-      %{
-        resp_status: resp_status,
-        resp_body: resp_body
-      } = apply(m, f, [conn.host, conn.method, conn.path_info, conn.request_headers, faultex])
-
-      # TODO headers
-      Plug.Conn.send_resp(conn, resp_status, resp_body)
-    else
-      # TODO headers
-      Plug.Conn.send_resp(conn, faultex.resp_status, faultex.resp_body)
-    end
+    conn
+    |> put_resp_headers(resp.headers)
+    |> Plug.Conn.send_resp(resp.status, resp.body)
+    |> Plug.Conn.halt()
   end
 
-  def put_resp_headers(conn, faultex) do
+  def put_resp_headers(conn, headers) do
     Enum.reduce(
-      faultex.resp_headers,
+      headers,
       conn,
       fn {k, v}, c ->
         Plug.Conn.put_resp_header(c, k, v)
