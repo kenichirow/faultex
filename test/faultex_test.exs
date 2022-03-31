@@ -4,11 +4,10 @@ defmodule FaultexTest do
   defmodule Matcher do
     use Faultex,
       injectors: [
-        %{
+        %Faultex.Injector{
           host: "*",
           path: "/auth/:id/*path",
           method: "POST",
-          exact: true,
           headers: [{"x-fault-inject", "auth-failed"}],
           percentage: 100,
           resp_headers: [],
@@ -52,44 +51,5 @@ defmodule FaultexTest do
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
              ])
-  end
-
-  test "match/5 are runtime match" do
-    assert {true, %Faultex.Injector{}} =
-             Matcher.match(
-               "https://example.com",
-               "POST",
-               ["auth", "test", "register"],
-               [
-                 {"x-fault-inject", "auth-failed"},
-                 {"content-type", "application/json"}
-               ],
-               %Faultex.Matcher{percentage: 100, headers: [{"x-fault-inject", "auth-failed"}]}
-             )
-  end
-
-  test "multiple header match" do
-    matcher = %Faultex.Injector{
-      percentage: 100,
-      headers: [{"test", "test1"}, {"x-fault-inject", "auth-failed"}]
-    }
-
-    assert {false, _} =
-             Matcher.match(
-               "https://example.com",
-               "POST",
-               ["test"],
-               [{"x-fault-inject", "auth-failed"}],
-               matcher
-             )
-
-    assert {true, %Faultex.Injector{}} =
-             Matcher.match(
-               "https://example.com",
-               "POST",
-               ["auth", "test", "register"],
-               [{"test", "test1"}, {"x-fault-inject", "auth-failed"}],
-               matcher
-             )
   end
 end

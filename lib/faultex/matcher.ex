@@ -189,21 +189,6 @@ defmodule Faultex.Matcher do
     process_segment(vars, [seg | path_match], rest)
   end
 
-  def host_match?(_host, nil), do: true
-  def host_match?(_host, "*"), do: true
-  def host_match?(host, expected), do: host == expected
-
-  def method_match?(_method, nil), do: true
-  def method_match?(_method, "*"), do: true
-  def method_match?(method, expected), do: method == expected
-
-  def path_match?(_path, nil), do: true
-  def path_match?(_path, "*"), do: true
-  # FIXME
-  def path_match?(path, expected) do
-    path == expected
-  end
-
   def req_headers_match?(_req_headers, []) do
     true
   end
