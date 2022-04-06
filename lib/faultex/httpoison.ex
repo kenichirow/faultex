@@ -18,43 +18,19 @@ defmodule Faultex.HTTPoison do
         }
 
         case match(request) do
-          %Faultex{resp_status: resp_status, resp_body: resp_body, resp_headers: resp_headers} =
-              faultex ->
-            if faultex.resp_handler != nil do
-              {m, f} = faultex.resp_handler
-              uri = URI.parse(url)
+          {true, injector} ->
+            resp = Faultex.inject(injector)
 
-              path =
-                uri.path
-                |> String.split("/")
-                |> Enum.reject(&match?("", &1))
+            {:ok,
+             %HTTPoison.Response{
+               body: resp.body,
+               headers: resp.headers,
+               request: request,
+               request_url: url,
+               status_code: resp.status
+             }}
 
-              %{
-                resp_status: resp_status,
-                resp_body: resp_body,
-                resp_header: resp_headers
-              } = apply(m, f, [uri.host, method, path, headers, faultex])
-
-              {:ok,
-               %HTTPoison.Response{
-                 body: resp_body,
-                 headers: resp_headers,
-                 request: request,
-                 request_url: url,
-                 status_code: resp_status
-               }}
-            else
-              {:ok,
-               %HTTPoison.Response{
-                 body: resp_body,
-                 headers: resp_headers,
-                 request: request,
-                 request_url: url,
-                 status_code: resp_status
-               }}
-            end
-
-          :pass ->
+          {false, _} ->
             super(method, url, body, headers, options)
         end
       end
@@ -83,7 +59,7 @@ defmodule Faultex.HTTPoison do
           |> String.split("/")
           |> Enum.reject(&match?("", &1))
 
-        @matcher.match(host, method, path_info, req_headers)
+        @matcher.match?(host, method, path_info, req_headers)
       end
     end
   end

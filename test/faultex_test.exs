@@ -4,16 +4,21 @@ defmodule FaultexTest do
   defmodule Matcher do
     use Faultex,
       injectors: [
-        %{
+        %Faultex.Injector.FaultInjector{
           host: "*",
           path: "/auth/:id/*path",
           method: "POST",
-          exact: true,
           headers: [{"x-fault-inject", "auth-failed"}],
           percentage: 100,
           resp_headers: [],
           resp_status: 401,
-          resp_body: "unauthorized",
+          resp_body: "unauthorized"
+        },
+        %Faultex.Injector.SlowInjector{
+          host: "*",
+          path: "/slow",
+          method: "GET",
+          percentage: 100,
           resp_delay: 1000
         }
       ]
@@ -21,22 +26,28 @@ defmodule FaultexTest do
 
   test "match/4 are compile time match configures" do
     # matches
-    assert %Faultex{} =
-             Matcher.match("*", "POST", ["auth", "test", "register"], [
+    assert {true, %Faultex.Injector.FaultInjector{}} =
+             Matcher.match?("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
              ])
 
     # Method does not match
-    assert :pass ==
-             Matcher.match("*", "GET", ["test"], [
+    assert {false, _} =
+             Matcher.match?("*", "GET", ["test"], [
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
              ])
 
     # Headers does not match
-    assert :pass ==
-             Matcher.match("*", "GET", ["test"], [
+    assert {false, _} =
+             Matcher.match?("*", "GET", ["test"], [
+               {"content-type", "application/json"}
+             ])
+
+    # Slow
+    assert {true, %Faultex.Injector.SlowInjector{}} =
+             Matcher.match?("*", "GET", ["slow"], [
                {"content-type", "application/json"}
              ])
 
@@ -47,49 +58,10 @@ defmodule FaultexTest do
       Application.put_env(:faultex, :disable, false)
     end)
 
-    assert :pass =
-             Matcher.match("*", "POST", ["auth", "test", "register"], [
+    assert {false, _} =
+             Matcher.match?("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
              ])
-  end
-
-  test "match/5 are runtime match" do
-    assert %Faultex{} =
-             Matcher.match(
-               "https://example.com",
-               "POST",
-               ["auth", "test", "register"],
-               [
-                 {"x-fault-inject", "auth-failed"},
-                 {"content-type", "application/json"}
-               ],
-               %Faultex{percentage: 100, headers: [{"x-fault-inject", "auth-failed"}]}
-             )
-  end
-
-  test "multiple header match" do
-    matcher = %Faultex{
-      percentage: 100,
-      headers: [{"test", "test1"}, {"x-fault-inject", "auth-failed"}]
-    }
-
-    assert :pass =
-             Matcher.match(
-               "https://example.com",
-               "POST",
-               ["test"],
-               [{"x-fault-inject", "auth-failed"}],
-               matcher
-             )
-
-    assert %Faultex{} =
-             Matcher.match(
-               "https://example.com",
-               "POST",
-               ["auth", "test", "register"],
-               [{"test", "test1"}, {"x-fault-inject", "auth-failed"}],
-               matcher
-             )
   end
 end

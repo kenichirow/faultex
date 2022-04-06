@@ -25,31 +25,19 @@ end
 ```elixir
   defmodule MyRouter do
     use Faultex.Plug, injectors: [
-     %{
+     %Faultex.Injector.SlowInjector{
       path: "/test/*/bar",
-      method: "GET",
       headers: [{"X-Fault-Inject", "auth-failed"}],
       percentage: 100,
-      resp_status: 401,
-      resp_body: Jason.encode!(%{message: "Autharization failed"}),
-      resp_headers: [],
       resp_delay: 1000
      }
     ]
      
     get "test/:foo/bar" do
-      # returns 401 to client
-      # never call this route
       ...
     end
   end
 ```
-
-```bash
-curl 
-> res
-```
-
 
 ### Faultex.HTTPoison
 
@@ -67,7 +55,7 @@ end
 ```elixir
 defmodule MyApp.HTTPoison do
   use Faultex.HTTPoison, injectors: [
-     %{
+     %Faultex.Injector.FaultInjector{
       path: "/test/*/bar",
       method: "GET",
       headers: [{"X-Fault-Inject", "auth-failed"}],
@@ -94,9 +82,9 @@ res = HTTPoison.request!(:get, "test/foo/bar", body, headers)
 
 ```elixir
  config :faultex, 
-   injectors: [RegisterFailure]
+   injectors: [{:register_fail, Faultex.Injector.FaultInjector}]
      
- config :faultex, RegisterFailure
+ config :faultex, :register_fail 
    # Request matcher parameters
    host: "example.com"
    path: "/auth/*/*/register",
@@ -151,7 +139,11 @@ which means matches all incoming parameters.
 - [x] Allow :disable key.
 - [] Allow :exact key.
 - [] - pass the path parameters to resp_handler
-- [] match/5 check request path pattern
-- [] match/4, match/5 returns {:ok, true, %Faultex} | {:ok, false, nil}
+- [x] match/5 check request path pattern
+- [x] match/4, match/5 returns {:ok, true, %Faultex} | {:ok, false, nil}
 - [] debug log
-- [] example project
+- [x] example project
+- [x] Injecror to Behaviour
+- [x] FaultInjector
+- [x] SlowInjector
+- [] RejectInjector
