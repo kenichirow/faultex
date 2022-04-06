@@ -45,13 +45,16 @@ defmodule Faultex.Plug do
   end
 
   def put_resp_headers(conn, headers) do
-    Enum.reduce(
-      headers,
-      conn,
-      fn {k, v}, c ->
-        Plug.Conn.put_resp_header(c, k, v)
-      end
-    )
+    conn =
+      Enum.reduce(
+        headers,
+        conn,
+        fn {k, v}, c ->
+          Plug.Conn.put_resp_header(c, k, v)
+        end
+      )
+
+    conn
   end
 
   def match(matcher, %Plug.Conn{} = conn) do

@@ -1,6 +1,6 @@
-defmodule FautexExample do
+defmodule FaultexExample do
   @moduledoc """
-  Documentation for `FautexExample`.
+  Documentation for `FaultexExample`.
   """
 
   @doc """
@@ -8,7 +8,7 @@ defmodule FautexExample do
 
   ## Examples
 
-      iex> FautexExample.hello()
+      iex> FaultexExample.hello()
       :world
 
   """

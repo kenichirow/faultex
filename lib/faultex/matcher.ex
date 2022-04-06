@@ -72,11 +72,11 @@ defmodule Faultex.Matcher do
   end
 
   defp do_build_matcher(injector) when is_struct(injector, Faultex.Injector.FaultInjector) do
-    resp_body = Map.get(injector, :resp_body, "")
-    resp_status = Map.get(injector, :resp_status, 200)
-    resp_headers = Map.get(injector, :resp_headers, [])
-    resp_handler = Map.get(injector, :resp_handler, nil)
-    resp_delay = Map.get(injector, :resp_delay, 0)
+    resp_body = Map.get(injector, :resp_body) || ""
+    resp_status = Map.get(injector, :resp_status) || 200
+    resp_headers = Map.get(injector, :resp_headers) || []
+    resp_handler = Map.get(injector, :resp_handler) || nil
+    resp_delay = Map.get(injector, :resp_delay) || 0
 
     {
       fill_matcher_params(injector),
@@ -109,11 +109,11 @@ defmodule Faultex.Matcher do
   end
 
   defp do_build_matcher(injector) when is_map(injector) do
-    resp_body = Map.get(injector, :resp_body, "")
-    resp_status = Map.get(injector, :resp_status, 200)
-    resp_headers = Map.get(injector, :resp_headers, [])
-    resp_handler = Map.get(injector, :resp_handler, nil)
-    resp_delay = Map.get(injector, :resp_delay, 0)
+    resp_body = Map.get(injector, :resp_body) || ""
+    resp_status = Map.get(injector, :resp_status) || 200
+    resp_headers = Map.get(injector, :resp_headers) || []
+    resp_handler = Map.get(injector, :resp_handler) || nil
+    resp_delay = Map.get(injector, :resp_delay) || 0
 
     {
       fill_matcher_params(injector),

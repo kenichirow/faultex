@@ -39,12 +39,6 @@ end
   end
 ```
 
-```bash
-curl 
-> res
-```
-
-
 ### Faultex.HTTPoison
 
 Add the :faultex to your project's mix.exs:
@@ -148,7 +142,7 @@ which means matches all incoming parameters.
 - [x] match/5 check request path pattern
 - [x] match/4, match/5 returns {:ok, true, %Faultex} | {:ok, false, nil}
 - [] debug log
-- [] example project
+- [x] example project
 - [x] Injecror to Behaviour
 - [x] FaultInjector
 - [x] SlowInjector

@@ -1,8 +1,8 @@
-defmodule FautexExampleTest do
+defmodule FaultexExampleTest do
   use ExUnit.Case
-  doctest FautexExample
+  doctest FaultexExample
 
   test "greets the world" do
-    assert FautexExample.hello() == :world
+    assert FaultexExample.hello() == :world
   end
 end

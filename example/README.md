@@ -1,21 +1,16 @@
-# FautexExample
+# FaultexExample
 
-**TODO: Add description**
+```bash
+mix deps.get
 
-## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `faultex_example` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:faultex_example, "~> 0.1.0"}
-  ]
-end
+# start server at localhost:4040
+mix run --no-halt
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/faultex_example](https://hexdocs.pm/faultex_example).
+```bash
+$ curl localhost:4040/example1
+> OK
 
+$ curl localhost:4040/example1 -H 'x-example-fault-inject:true'
+> request failed
+```
