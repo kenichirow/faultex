@@ -27,8 +27,10 @@ defmodule Faultex.Plug do
         _ = Faultex.inject(slow_injector)
         conn
 
-      {true, injector} ->
-        send_resp_and_halt(conn, injector)
+      {true, %Faultex.Injector.RejectInjector{} = reject_injector} ->
+        _ = Faultex.inject(reject_injector)
+
+        Plug.Conn.halt(conn)
 
       {false, _} ->
         conn
