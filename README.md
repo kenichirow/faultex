@@ -137,7 +137,6 @@ which means matches all incoming parameters.
 - [x] Disaced config.exs
 - [x] Faultex.Plug and Faultex.HTTPoison are should have __using__ macro and compile routes dinamicaly
 - [x] Allow :disable key.
-- [] Allow :exact key.
 - [] - pass the path parameters to resp_handler
 - [x] match/5 check request path pattern
 - [x] match/4, match/5 returns {:ok, true, %Faultex} | {:ok, false, nil}
@@ -147,3 +146,4 @@ which means matches all incoming parameters.
 - [x] FaultInjector
 - [x] SlowInjector
 - [] RejectInjector
+- [] :rand.seed
