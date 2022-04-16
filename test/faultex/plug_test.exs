@@ -35,7 +35,6 @@ defmodule Faultex.PlugTest do
     conn = Plug.Test.conn("POST", "/auth/test/register")
     conn = Plug.Conn.put_req_header(conn, "x-fault-inject", "auth-failed")
     conn = Plug.Conn.put_req_header(conn, "content-type", "application/json")
-    conn = MyRouter.call(conn, MyRouter.init(matcher: MyRouter))
-    assert conn.status == 401
+    assert %Plug.Conn{status: 401, resp_body: "unauthorized"} = MyRouter.call(conn, MyRouter.init(matcher: MyRouter))
   end
 end
