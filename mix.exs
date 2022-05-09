@@ -1,10 +1,10 @@
-defmodule Injex.MixProject do
+defmodule Faultex.MixProject do
   use Mix.Project
 
   def project do
     [
       app: :faultex,
-      version: "0.0.1",
+      version: "0.0.2",
       elixir: "~> 1.10",
       deps: deps(),
       package: package()
@@ -19,7 +19,7 @@ defmodule Injex.MixProject do
 
   defp package do
     [
-      description: "A Fault injection library which work with Plug and HTTPoison",
+      description: "Fault injection library in Elixir",
       maintainers: ["kenichirow"],
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/kenichirow/faultex"}
