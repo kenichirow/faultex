@@ -14,33 +14,41 @@ defmodule Faultex.Matcher do
   defmacro __before_compile__(env) do
     injectors = Module.get_attribute(env.module, :__faultex_injectors__)
 
-    for {matcher, injector} <- Faultex.Matcher.build_matchers(injectors) do
-      host_match = matcher.host_match
-      method_match = matcher.method_match
-      path_match = matcher.path_match
-      headers = matcher.headers
-      percentage = matcher.percentage
-      disable = matcher.disable
+    match_fns =
+      for {{host_match, method_match, path_match}, clauses} <- Faultex.Matcher.build_matchers(injectors) do
+        escaped_clauses = Macro.escape(clauses)
 
-      quote do
-        def match?(
-              unquote(to_underscore(host_match)),
-              unquote(to_underscore(method_match)),
-              unquote(to_underscore(path_match)),
-              req_headers
-            ) do
-          disabled? = Application.get_env(:faultex, :disable, false) || unquote(disable)
-          roll = Faultex.Matcher.roll(unquote(percentage))
-          match_headers? = Faultex.Matcher.req_headers_match?(req_headers, unquote(headers))
+        quote do
+          def match?(
+                unquote(to_underscore(host_match)),
+                unquote(to_underscore(method_match)),
+                unquote(to_underscore(path_match)),
+                req_headers
+              ) do
+            case Faultex.Matcher.select_injector(req_headers, unquote(escaped_clauses)) do
+              nil ->
+                {false, nil}
 
-          if roll and not disabled? and match_headers? do
-            {true, unquote(Macro.escape(injector))}
-          else
-            {false, nil}
+              {matcher, injector} ->
+                disabled? = Application.get_env(:faultex, :disable, false) || matcher.disable
+                roll = Faultex.Matcher.roll(matcher.percentage)
+
+                if roll and not disabled? do
+                  {true, injector}
+                else
+                  {false, nil}
+                end
+            end
           end
         end
       end
-    end
+
+    catch_all =
+      quote do
+        def match?(_, _, _, _), do: {false, nil}
+      end
+
+    match_fns ++ [catch_all]
   end
 
   defp fill_matcher_params(injector) do
@@ -64,14 +72,21 @@ defmodule Faultex.Matcher do
 
   def build_matchers(injectors) do
     matchers = Enum.map(injectors, &do_build_matcher(&1))
-    matchers ++ [{%Faultex.Matcher{disable: true}, %Faultex.Injector.FaultInjector{}}]
+    group_by_match(matchers)
   end
 
-  defp do_build_matcher(injector_id) when is_atom(injector_id) do
+  def group_by_match(matchers) do
+    matchers
+    |> Enum.group_by(fn {matcher, _injector} ->
+      {matcher.host_match, matcher.method_match, matcher.path_match}
+    end)
+  end
+
+  def do_build_matcher(injector_id) when is_atom(injector_id) do
     do_build_matcher(Application.fetch_env!(:faultex, injector_id))
   end
 
-  defp do_build_matcher(injector) when is_struct(injector, Faultex.Injector.FaultInjector) do
+  def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.FaultInjector) do
     resp_body = Map.get(injector, :resp_body) || ""
     resp_status = Map.get(injector, :resp_status) || 200
     resp_headers = Map.get(injector, :resp_headers) || []
@@ -90,7 +105,7 @@ defmodule Faultex.Matcher do
     }
   end
 
-  defp do_build_matcher(injector) when is_struct(injector, Faultex.Injector.SlowInjector) do
+  def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.SlowInjector) do
     {
       fill_matcher_params(injector),
       %Faultex.Injector.SlowInjector{
@@ -99,7 +114,7 @@ defmodule Faultex.Matcher do
     }
   end
 
-  defp do_build_matcher(injector) when is_struct(injector, Faultex.Injector.RejectInjector) do
+  def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.RejectInjector) do
     {
       fill_matcher_params(injector),
       %Faultex.Injector.RejectInjector{
@@ -108,7 +123,7 @@ defmodule Faultex.Matcher do
     }
   end
 
-  defp do_build_matcher(injector) when is_map(injector) do
+  def do_build_matcher(injector) when is_map(injector) do
     resp_body = Map.get(injector, :resp_body) || ""
     resp_status = Map.get(injector, :resp_status) || 200
     resp_headers = Map.get(injector, :resp_headers) || []
@@ -208,6 +223,12 @@ defmodule Faultex.Matcher do
 
   defp to_underscore(any) do
     any
+  end
+
+  def select_injector(req_headers, clauses) do
+    Enum.find(clauses, fn({matcher, _injector}) ->
+      Faultex.Matcher.req_headers_match?(req_headers, matcher.headers)
+    end)
   end
 
   def roll(100), do: true

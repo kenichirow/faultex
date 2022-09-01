@@ -24,6 +24,32 @@ defmodule FaultexTest do
       ]
   end
 
+  defmodule MultipleMatcher do
+    use Faultex,
+      injectors: [
+        %Faultex.Injector.FaultInjector{
+          host: "*",
+          path: "/auth/:id/*path",
+          method: "POST",
+          headers: [{"x-fault-inject", "auth-failed-1"}],
+          percentage: 100,
+          resp_headers: [],
+          resp_status: 401,
+          resp_body: "unauthorized-1"
+        },
+        %Faultex.Injector.FaultInjector{
+          host: "*",
+          path: "/auth/:id/*path",
+          method: "POST",
+          headers: [{"x-fault-inject", "auth-failed-2"}],
+          percentage: 100,
+          resp_headers: [],
+          resp_status: 401,
+          resp_body: "unauthorized-2"
+        },
+      ]
+  end
+
   test "match/4 are compile time match configures" do
     # matches
     assert {true, %Faultex.Injector.FaultInjector{}} =
@@ -62,6 +88,26 @@ defmodule FaultexTest do
              Matcher.match?("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
+             ])
+  end
+
+  test "multiple match selects injector by header" do
+    # header auth-failed-1 → unauthorized-1
+    assert {true, %Faultex.Injector.FaultInjector{resp_body: "unauthorized-1"}} =
+             MultipleMatcher.match?("*", "POST", ["auth", "test", "register"], [
+               {"x-fault-inject", "auth-failed-1"}
+             ])
+
+    # header auth-failed-2 → unauthorized-2
+    assert {true, %Faultex.Injector.FaultInjector{resp_body: "unauthorized-2"}} =
+             MultipleMatcher.match?("*", "POST", ["auth", "test", "register"], [
+               {"x-fault-inject", "auth-failed-2"}
+             ])
+
+    # header がどちらにもマッチしない → {false, nil}
+    assert {false, nil} =
+             MultipleMatcher.match?("*", "POST", ["auth", "test", "register"], [
+               {"x-fault-inject", "unknown"}
              ])
   end
 end
