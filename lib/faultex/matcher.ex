@@ -64,14 +64,23 @@ defmodule Faultex.Matcher do
 
   def build_matchers(injectors) do
     matchers = Enum.map(injectors, &do_build_matcher(&1))
+    IO.inspect group_by_match(matchers)
     matchers ++ [{%Faultex.Matcher{disable: true}, %Faultex.Injector.FaultInjector{}}]
   end
 
-  defp do_build_matcher(injector_id) when is_atom(injector_id) do
+  def group_by_match(matchers) do
+    matchers
+    |> Enum.group_by(fn {matcher, injector} ->
+      {matcher.host_match, matcher.method_match, matcher.path_match}
+    end)
+
+  end
+
+  def do_build_matcher(injector_id) when is_atom(injector_id) do
     do_build_matcher(Application.fetch_env!(:faultex, injector_id))
   end
 
-  defp do_build_matcher(injector) when is_struct(injector, Faultex.Injector.FaultInjector) do
+  def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.FaultInjector) do
     resp_body = Map.get(injector, :resp_body) || ""
     resp_status = Map.get(injector, :resp_status) || 200
     resp_headers = Map.get(injector, :resp_headers) || []
@@ -90,7 +99,7 @@ defmodule Faultex.Matcher do
     }
   end
 
-  defp do_build_matcher(injector) when is_struct(injector, Faultex.Injector.SlowInjector) do
+  def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.SlowInjector) do
     {
       fill_matcher_params(injector),
       %Faultex.Injector.SlowInjector{
@@ -99,7 +108,7 @@ defmodule Faultex.Matcher do
     }
   end
 
-  defp do_build_matcher(injector) when is_struct(injector, Faultex.Injector.RejectInjector) do
+  def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.RejectInjector) do
     {
       fill_matcher_params(injector),
       %Faultex.Injector.RejectInjector{
@@ -108,7 +117,7 @@ defmodule Faultex.Matcher do
     }
   end
 
-  defp do_build_matcher(injector) when is_map(injector) do
+  def do_build_matcher(injector) when is_map(injector) do
     resp_body = Map.get(injector, :resp_body) || ""
     resp_status = Map.get(injector, :resp_status) || 200
     resp_headers = Map.get(injector, :resp_headers) || []

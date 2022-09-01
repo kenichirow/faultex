@@ -24,6 +24,32 @@ defmodule FaultexTest do
       ]
   end
 
+  defmodule MultipleMatcher do
+    use Faultex,
+      injectors: [
+        %Faultex.Injector.FaultInjector{
+          host: "*",
+          path: "/auth/:id/*path",
+          method: "POST",
+          headers: [{"x-fault-inject", "auth-failed-1"}],
+          percentage: 100,
+          resp_headers: [],
+          resp_status: 401,
+          resp_body: "unauthorized-1"
+        },
+        %Faultex.Injector.FaultInjector{
+          host: "*",
+          path: "/auth/:id/*path",
+          method: "POST",
+          headers: [{"x-fault-inject", "auth-failed-2"}],
+          percentage: 100,
+          resp_headers: [],
+          resp_status: 401,
+          resp_body: "unauthorized-2"
+        },
+      ]
+  end
+
   test "match/4 are compile time match configures" do
     # matches
     assert {true, %Faultex.Injector.FaultInjector{}} =
@@ -63,5 +89,32 @@ defmodule FaultexTest do
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
              ])
+  end
+
+  test "multiple match" do
+    injectors =  [
+      %Faultex.Injector.FaultInjector{
+          host: "*",
+          path: "/auth/:id/*path",
+          method: "POST",
+          headers: [{"x-fault-inject", "auth-failed-1"}],
+          percentage: 100,
+          resp_headers: [],
+          resp_status: 401,
+          resp_body: "unauthorized-1"
+        },
+        %Faultex.Injector.FaultInjector{
+          host: "*",
+          path: "/auth/:id/*path",
+          method: "POST",
+          headers: [{"x-fault-inject", "auth-failed-2"}],
+          percentage: 100,
+          resp_headers: [],
+          resp_status: 401,
+          resp_body: "unauthorized-2"
+        },
+    ]
+    matchers = Enum.map(injectors, &Faultex.Matcher.do_build_matcher(&1))
+    IO.inspect Faultex.Matcher.group_by_match(matchers)
   end
 end
