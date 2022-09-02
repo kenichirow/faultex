@@ -115,6 +115,18 @@ defmodule FaultexTest do
         },
     ]
     matchers = Enum.map(injectors, &Faultex.Matcher.do_build_matcher(&1))
-    IO.inspect Faultex.Matcher.group_by_match(matchers)
+    req_hedaers = [{"x-fault-inject", "auth-failed-2"}]
+
+    matcher_groups = Faultex.Matcher.group_by_match(matchers)
+    for {{host, method, path}, clauses} <- matcher_groups do
+      {matcher, injector} = select_injector(req_hedaers, clauses)
+      assert matcher.headers == [{"x-fault-inject", "auth-failed-2"}]
+    end
+  end
+
+  defp select_injector(req_headers, clauses) do
+    Enum.find(clauses, fn({matcher, injector}) ->
+      Faultex.Matcher.req_headers_match?(req_headers, matcher.headers)
+    end)
   end
 end
