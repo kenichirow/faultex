@@ -14,11 +14,13 @@ defmodule Faultex.Plug do
   end
 
   @impl Plug
+  @spec init(Keyword.t()) :: Keyword.t()
   def init(opts) do
     opts
   end
 
   @impl Plug
+  @spec call(Plug.Conn.t(), Keyword.t()) :: Plug.Conn.t()
   def call(conn, opts) do
     matcher = opts[:matcher]
 
@@ -35,6 +37,7 @@ defmodule Faultex.Plug do
     end
   end
 
+  @spec send_resp_and_halt(Plug.Conn.t(), Faultex.Matcher.injector()) :: Plug.Conn.t()
   def send_resp_and_halt(conn, injector) do
     resp = Faultex.inject(injector)
 
@@ -44,19 +47,17 @@ defmodule Faultex.Plug do
     |> Plug.Conn.halt()
   end
 
-  def put_resp_headers(conn, headers) do
-    conn =
-      Enum.reduce(
-        headers,
-        conn,
-        fn {k, v}, c ->
-          Plug.Conn.put_resp_header(c, k, v)
-        end
-      )
+  @spec put_resp_headers(Plug.Conn.t(), [{String.t(), String.t()}] | nil) :: Plug.Conn.t()
+  def put_resp_headers(conn, nil), do: conn
+  def put_resp_headers(conn, []), do: conn
 
-    conn
+  def put_resp_headers(conn, headers) do
+    Enum.reduce(headers, conn, fn {k, v}, c ->
+      Plug.Conn.put_resp_header(c, k, v)
+    end)
   end
 
+  @spec match(module(), Plug.Conn.t()) :: Faultex.Matcher.match_result()
   def match(matcher, %Plug.Conn{} = conn) do
     %{
       host: _host,

@@ -55,7 +55,7 @@ defmodule Faultex.HTTPoison do
         %{host: host, path: path} = url |> URI.parse()
 
         path_info =
-          path
+          (path || "/")
           |> String.split("/")
           |> Enum.reject(&match?("", &1))
 
