@@ -2,6 +2,22 @@ defmodule Faultex.Matcher do
   @moduledoc """
   """
 
+  @type header :: {String.t(), String.t()}
+  @type injector ::
+          Faultex.Injector.FaultInjector.t()
+          | Faultex.Injector.SlowInjector.t()
+          | Faultex.Injector.RejectInjector.t()
+  @type match_result :: {boolean(), injector() | nil}
+
+  @type t :: %__MODULE__{
+          disable: boolean() | nil,
+          host_match: String.t() | nil,
+          method_match: String.t() | nil,
+          path_match: list() | nil,
+          headers: [header()] | nil,
+          percentage: integer() | nil
+        }
+
   defstruct [
     :disable,
     :host_match,
@@ -70,11 +86,13 @@ defmodule Faultex.Matcher do
     }
   end
 
+  @spec build_matchers([term()]) :: %{{term(), term(), term()} => [{t(), injector()}]}
   def build_matchers(injectors) do
     matchers = Enum.map(injectors, &do_build_matcher(&1))
     group_by_match(matchers)
   end
 
+  @spec group_by_match([{t(), injector()}]) :: %{{term(), term(), term()} => [{t(), injector()}]}
   def group_by_match(matchers) do
     matchers
     |> Enum.group_by(fn {matcher, _injector} ->
@@ -82,6 +100,7 @@ defmodule Faultex.Matcher do
     end)
   end
 
+  @spec do_build_matcher(atom() | struct() | map()) :: {t(), injector()}
   def do_build_matcher(injector_id) when is_atom(injector_id) do
     do_build_matcher(Application.fetch_env!(:faultex, injector_id))
   end
@@ -142,6 +161,7 @@ defmodule Faultex.Matcher do
     }
   end
 
+  @spec build_path_params_match(list(), list()) :: list()
   def build_path_params_match(params_matches, []) do
     params_matches
   end
@@ -170,17 +190,20 @@ defmodule Faultex.Matcher do
     build_path_params_match(params_matches, rest)
   end
 
+  @spec build_path_match(String.t()) :: {list(), list()}
   def build_path_match(path_pattern) do
     segments = path_pattern |> split() |> Enum.reverse()
     process_segment([], [], segments)
   end
 
+  @spec split(String.t()) :: [String.t()]
   def split(path_pattern) do
     for seg <- String.split(path_pattern, "/"), seg != "" do
       seg
     end
   end
 
+  @spec process_segment(list(), list(), [String.t()]) :: {list(), list()}
   def process_segment(vars, path_match, []) do
     {vars, path_match}
   end
@@ -199,6 +222,7 @@ defmodule Faultex.Matcher do
     process_segment(vars, [seg | path_match], rest)
   end
 
+  @spec req_headers_match?([header()], [header()] | nil) :: boolean()
   def req_headers_match?(_req_headers, []) do
     true
   end
@@ -225,12 +249,14 @@ defmodule Faultex.Matcher do
     any
   end
 
+  @spec select_injector([header()], [{t(), injector()}]) :: {t(), injector()} | nil
   def select_injector(req_headers, clauses) do
     Enum.find(clauses, fn({matcher, _injector}) ->
       Faultex.Matcher.req_headers_match?(req_headers, matcher.headers)
     end)
   end
 
+  @spec roll(integer()) :: boolean()
   def roll(100), do: true
   def roll(percentage), do: :rand.uniform(100) < percentage
 end

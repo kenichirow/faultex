@@ -10,6 +10,11 @@ defmodule Faultex do
     end
   end
 
+  @spec inject(
+          Faultex.Injector.FaultInjector.t()
+          | Faultex.Injector.SlowInjector.t()
+          | Faultex.Injector.RejectInjector.t()
+        ) :: Faultex.Response.t()
   def inject(%Faultex.Injector.FaultInjector{} = injector) do
     Faultex.Injector.FaultInjector.inject(injector)
   end
@@ -19,6 +24,6 @@ defmodule Faultex do
   end
 
   def inject(%Faultex.Injector.RejectInjector{} = injector) do
-    Faultex.Injector.SlowInjector.inject(injector)
+    Faultex.Injector.RejectInjector.inject(injector)
   end
 end

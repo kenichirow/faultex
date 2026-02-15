@@ -7,7 +7,11 @@ defmodule Faultex.MixProject do
       version: "0.0.2",
       elixir: "~> 1.10",
       deps: deps(),
-      package: package()
+      package: package(),
+      dialyzer: [
+        plt_local_path: "priv/plts",
+        plt_core_path: "priv/plts"
+      ]
     ]
   end
 
@@ -31,7 +35,8 @@ defmodule Faultex.MixProject do
       {:plug, "~> 1.11"},
       {:httpoison, "~> 1.8"},
       {:jason, "~> 1.2"},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.4", only: :dev, runtime: false}
     ]
   end
 end

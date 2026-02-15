@@ -1,8 +1,14 @@
 defmodule Faultex.Injector do
-  @callback inject(requet :: term) :: Faultex.Response | :pass
+  @callback inject(request :: term()) :: Faultex.Response.t()
 end
 
 defmodule Faultex.Response do
+  @type t :: %__MODULE__{
+          status: integer() | nil,
+          headers: [{String.t(), String.t()}] | nil,
+          body: String.t() | nil
+        }
+
   defstruct [:status, :headers, :body]
 end
 
@@ -10,6 +16,21 @@ defmodule Faultex.Injector.FaultInjector do
   @moduledoc """
   Inject fault response immediately
   """
+
+  @type t :: %__MODULE__{
+          id: term(),
+          disable: boolean() | nil,
+          host: String.t() | nil,
+          method: String.t() | nil,
+          path: String.t() | nil,
+          headers: [{String.t(), String.t()}] | nil,
+          percentage: integer() | nil,
+          resp_status: integer() | nil,
+          resp_headers: [{String.t(), String.t()}] | nil,
+          resp_handler: term(),
+          resp_body: String.t() | nil,
+          resp_delay: integer() | nil
+        }
 
   defstruct [
     :id,
@@ -29,6 +50,7 @@ defmodule Faultex.Injector.FaultInjector do
   @behaviour Faultex.Injector
 
   @impl Faultex.Injector
+  @spec inject(t()) :: Faultex.Response.t()
   def inject(injector) do
     resp_delay =
       case Map.get(injector, :resp_delay) do
@@ -64,6 +86,17 @@ defmodule Faultex.Injector.SlowInjector do
 
   @behaviour Faultex.Injector
 
+  @type t :: %__MODULE__{
+          id: term(),
+          disable: boolean() | nil,
+          host: String.t() | nil,
+          method: String.t() | nil,
+          path: String.t() | nil,
+          headers: [{String.t(), String.t()}] | nil,
+          percentage: integer() | nil,
+          resp_delay: integer() | nil
+        }
+
   defstruct [
     :id,
     :disable,
@@ -76,6 +109,7 @@ defmodule Faultex.Injector.SlowInjector do
   ]
 
   @impl Faultex.Injector
+  @spec inject(t()) :: Faultex.Response.t()
   def inject(injector) do
     resp_delay =
       case Map.get(injector, :resp_delay) do
@@ -107,9 +141,21 @@ defmodule Faultex.Injector.RejectInjector do
     :resp_delay
   ]
 
+  @type t :: %__MODULE__{
+          id: term(),
+          disable: boolean() | nil,
+          host: String.t() | nil,
+          method: String.t() | nil,
+          path: String.t() | nil,
+          headers: [{String.t(), String.t()}] | nil,
+          percentage: integer() | nil,
+          resp_delay: integer() | nil
+        }
+
   @behaviour Faultex.Injector
 
   @impl Faultex.Injector
+  @spec inject(t()) :: Faultex.Response.t()
   def inject(_injector) do
     %Faultex.Response{headers: [], body: ""}
   end
