@@ -47,18 +47,14 @@ defmodule Faultex.Plug do
     |> Plug.Conn.halt()
   end
 
-  @spec put_resp_headers(Plug.Conn.t(), [{String.t(), String.t()}]) :: Plug.Conn.t()
-  def put_resp_headers(conn, headers) do
-    conn =
-      Enum.reduce(
-        headers,
-        conn,
-        fn {k, v}, c ->
-          Plug.Conn.put_resp_header(c, k, v)
-        end
-      )
+  @spec put_resp_headers(Plug.Conn.t(), [{String.t(), String.t()}] | nil) :: Plug.Conn.t()
+  def put_resp_headers(conn, nil), do: conn
+  def put_resp_headers(conn, []), do: conn
 
-    conn
+  def put_resp_headers(conn, headers) do
+    Enum.reduce(headers, conn, fn {k, v}, c ->
+      Plug.Conn.put_resp_header(c, k, v)
+    end)
   end
 
   @spec match(module(), Plug.Conn.t()) :: Faultex.Matcher.match_result()
