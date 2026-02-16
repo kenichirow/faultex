@@ -39,6 +39,27 @@ defmodule Faultex.InjectorTest do
       assert resp.headers == [{"x-reason", "forbidden"}]
       assert resp.body == "forbidden"
     end
+
+    test "resp_delay: nil causes no delay" do
+      injector = %Faultex.Injector.ErrorInjector{resp_status: 200, resp_delay: nil}
+      start = System.monotonic_time(:millisecond)
+      _resp = Faultex.Injector.ErrorInjector.inject(injector)
+      assert System.monotonic_time(:millisecond) - start < 50
+    end
+
+    test "resp_delay: 0 causes no delay" do
+      injector = %Faultex.Injector.ErrorInjector{resp_status: 200, resp_delay: 0}
+      start = System.monotonic_time(:millisecond)
+      _resp = Faultex.Injector.ErrorInjector.inject(injector)
+      assert System.monotonic_time(:millisecond) - start < 50
+    end
+
+    test "resp_delay: positive value delays by specified milliseconds" do
+      injector = %Faultex.Injector.ErrorInjector{resp_status: 200, resp_delay: 50}
+      start = System.monotonic_time(:millisecond)
+      _resp = Faultex.Injector.ErrorInjector.inject(injector)
+      assert System.monotonic_time(:millisecond) - start >= 50
+    end
   end
 
   describe "SlowInjector.inject/1" do

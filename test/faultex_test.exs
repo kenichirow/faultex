@@ -104,7 +104,7 @@ defmodule FaultexTest do
                {"x-fault-inject", "auth-failed-2"}
              ])
 
-    # header がどちらにもマッチしない → {false, nil}
+    # no header matches
     assert {false, nil} =
              MultipleMatcher.match?("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "unknown"}
