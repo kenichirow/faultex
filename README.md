@@ -4,146 +4,125 @@
 
 Faultex is a simple Elixir fault injection library.
 
-## USAGE
+## Installation
 
-Faultex can be use with the Plug and HTTPoison
+Add `:faultex` to your project's `mix.exs`:
 
-
-### Faultex.Plug
-
-Add the :faultex to your project's mix.exs:
-
-```
+```elixir
 defp deps do
   [
-    {:plug, "~> 1.0"},
     {:faultex, "~> 0.1"}
   ]
 end
 ```
 
+## Injector Types
+
+| Injector | Description | Response Parameters |
+|---|---|---|
+| `Faultex.Injector.ErrorInjector` | Returns an error response immediately | `resp_status`, `resp_body`, `resp_headers`, `resp_delay` |
+| `Faultex.Injector.SlowInjector` | Delays the request, then passes through to the original handler | `resp_delay` |
+| `Faultex.Injector.RejectInjector` | Aborts the connection with an empty response | (none) |
+
+## Usage: Faultex.Plug
+
 ```elixir
-  defmodule MyRouter do
-    use Faultex.Plug, injectors: [
-     %Faultex.Injector.SlowInjector{
-      path: "/test/*/bar",
-      headers: [{"X-Fault-Inject", "auth-failed"}],
+defmodule MyRouter do
+  use Faultex.Plug, injectors: [
+    %Faultex.Injector.ErrorInjector{
+      path: "/api/*/users",
+      headers: [{"x-fault-inject", "true"}],
       percentage: 100,
-      resp_delay: 1000
-     }
-    ]
-     
-    get "test/:foo/bar" do
-      ...
-    end
-  end
-```
-
-### Faultex.HTTPoison
-
-Add the :faultex to your project's mix.exs:
-
-```
-defp deps do
-  [
-    {:httpoison, "~> 1.0"},
-    {:faultex, "~> 0.1"}
+      resp_status: 500,
+      resp_body: "Internal Server Error"
+    },
+    %Faultex.Injector.SlowInjector{
+      path: "/api/health",
+      percentage: 50,
+      resp_delay: 2000
+    }
   ]
+
+  plug(:match)
+  plug(:dispatch)
+
+  get "/api/:version/users" do
+    send_resp(conn, 200, "OK")
+  end
+
+  get "/api/health" do
+    send_resp(conn, 200, "OK")
+  end
 end
 ```
 
+## Usage: Faultex.HTTPoison
+
 ```elixir
-defmodule MyApp.HTTPoison do
+defmodule MyApp.HTTPClient do
   use Faultex.HTTPoison, injectors: [
-     %Faultex.Injector.FaultInjector{
-      path: "/test/*/bar",
+    %Faultex.Injector.ErrorInjector{
+      path: "/api/*/users",
       method: "GET",
-      headers: [{"X-Fault-Inject", "auth-failed"}],
+      headers: [{"x-fault-inject", "true"}],
       percentage: 100,
       resp_status: 401,
-      resp_body: Jason.encode!(%{message: "Autharization failed"}),
-      resp_headers: [],
-      resp_delay: 1000
-      }
-    ]
+      resp_body: ~s({"message": "Authorization failed"}),
+      resp_headers: []
+    }
+  ]
 end
-
-alias MyApp.HTTPoison as HTTPoison
-
-# receive 401
-res = HTTPoison.request!(:get, "test/foo/bar", body, headers)
-
-> res%{
-}
-```
-
-
-## Use config.exs
-
-```elixir
- config :faultex, 
-   injectors: [{:register_fail, Faultex.Injector.FaultInjector}]
-     
- config :faultex, :register_fail 
-   # Request matcher parameters
-   host: "example.com"
-   path: "/auth/*/*/register",
-   method: "POST",
-   exact: true,
-   header: {"X-Fault-Inject", "auth-failed"},
-   percentage: 100,
-
-   # Response parameters
-   resp_status: 401,
-   resp_handler: MyApp.FailureHandler,
-   resp_body: Jason.encode!(%{message: "Autharization failed"}),
-   resp_headers: [],
-   resp_delay: 1000
 ```
 
 ```elixir
-use Faultex.HTTPoison, Application.compile_env!(faultex, :injectors)
+alias MyApp.HTTPClient
+
+# When the request matches, returns injected 401 response
+{:ok, resp} = HTTPClient.get("https://example.com/api/v1/users", [{"x-fault-inject", "true"}])
+resp.status_code  #=> 401
 ```
 
-### Global Parameters
+## Configuration
 
-- disable: if true, disable all injectors
-- injectors: list of injectors 
+### Request Match Parameters
 
-### Fault Injector Configuration
+All injector types share these parameters for matching incoming requests:
 
-In some request match parameters, you can set `"*"`. 
-which means matches all incoming parameters.
+- `disable` — if `true`, disables this injector. Default: `false`
+- `host` — matches request host. Default: `"*"` (matches all)
+- `path` — matches request path pattern. Supports wildcard `*` and Plug.Router-style parameters like `:id`. Default: `"*"`
+- `method` — matches request method (e.g. `"GET"`, `"POST"`). Default: `"*"` (matches all)
+- `headers` — matches request headers. List of `{key, value}` tuples. Default: `[]`
+- `percentage` — probability (0–100) that the injector fires. Default: `100`
 
-- disable: optional. if true, disable this injectors. if omit this parameter, set default to `false`
-- host: optioanl. matches request host. if omit this parameters, set default to `"*"` 
-- path: optional. matches pattern for request path. You can use Plug.Router style path parameters like `:id` and wildcard pattern like `/*path` default is `*`
-- methd: optional. metches request method. atom or string. default is `"*"`
-- header: optional. matches request headers. default is `[]`
-- percentage: optional. default is `100`.
-- resp_status: optional. 
-- resp_body: optional.
-- resp_headers: optional.
-- resp_handler: optioanl.
-- resp_delay: optioanl.
+### Response Parameters
+
+#### ErrorInjector
+
+- `resp_status` — HTTP status code. Default: `200`
+- `resp_body` — response body string. Default: `""`
+- `resp_headers` — list of `{key, value}` header tuples. Default: `[]`
+- `resp_delay` — delay in milliseconds before returning the response. Default: `0`
+
+#### SlowInjector
+
+- `resp_delay` — delay in milliseconds before passing through to the original handler. Default: `0`
+
+#### RejectInjector
+
+No additional response parameters. Returns an empty response.
+
+### Global Configuration
+
+You can disable all injectors at runtime via application config:
+
+```elixir
+Application.put_env(:faultex, :disable, true)
+```
 
 ## TODO
 
-- [x] Allow :resp_headers key.
-- [x] Allow :resp_delay key.
-- [x] Allow :percentage key.
-- [x] :headers are should parse list (cowboy style headers) [{key, value}].
-- [x] Allow response handlers
-- [x] Disaced config.exs
-- [x] Faultex.Plug and Faultex.HTTPoison are should have __using__ macro and compile routes dinamicaly
-- [x] Allow :disable key.
-- [] Allow :exact key.
-- [] - pass the path parameters to resp_handler
-- [x] match/5 check request path pattern
-- [x] match/4, match/5 returns {:ok, true, %Faultex} | {:ok, false, nil}
-- [] debug log
-- [x] example project
-- [x] Injecror to Behaviour
-- [x] FaultInjector
-- [x] SlowInjector
-- [] RejectInjector
+- [ ] Allow `:exact` key
+- [ ] Pass path parameters to resp_handler
+- [ ] Debug log
+- [ ] RejectInjector
