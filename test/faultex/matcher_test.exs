@@ -44,6 +44,56 @@ defmodule Faultex.MatcherTest do
     end
   end
 
+  describe "validate_injector!/1" do
+    test "raises ArgumentError when percentage is negative" do
+      assert_raise ArgumentError, ~r/percentage/, fn ->
+        Faultex.Matcher.do_build_matcher(%Faultex.Injector.ErrorInjector{percentage: -1})
+      end
+    end
+
+    test "raises ArgumentError when percentage exceeds 100" do
+      assert_raise ArgumentError, ~r/percentage/, fn ->
+        Faultex.Matcher.do_build_matcher(%Faultex.Injector.ErrorInjector{percentage: 101})
+      end
+    end
+
+    test "raises ArgumentError when percentage is not an integer" do
+      assert_raise ArgumentError, ~r/percentage/, fn ->
+        Faultex.Matcher.do_build_matcher(%Faultex.Injector.ErrorInjector{percentage: "50"})
+      end
+    end
+
+    test "raises ArgumentError when resp_delay is negative" do
+      assert_raise ArgumentError, ~r/resp_delay/, fn ->
+        Faultex.Matcher.do_build_matcher(%Faultex.Injector.ErrorInjector{resp_delay: -1})
+      end
+    end
+
+    test "raises ArgumentError when resp_status is negative" do
+      assert_raise ArgumentError, ~r/resp_status/, fn ->
+        Faultex.Matcher.do_build_matcher(%Faultex.Injector.ErrorInjector{resp_status: -1})
+      end
+    end
+
+    test "raises ArgumentError for SlowInjector with invalid percentage" do
+      assert_raise ArgumentError, ~r/percentage/, fn ->
+        Faultex.Matcher.do_build_matcher(%Faultex.Injector.SlowInjector{percentage: 150})
+      end
+    end
+
+    test "raises ArgumentError for RejectInjector with invalid resp_delay" do
+      assert_raise ArgumentError, ~r/resp_delay/, fn ->
+        Faultex.Matcher.do_build_matcher(%Faultex.Injector.RejectInjector{resp_delay: -1})
+      end
+    end
+
+    test "raises ArgumentError for plain map with invalid percentage" do
+      assert_raise ArgumentError, ~r/percentage/, fn ->
+        Faultex.Matcher.do_build_matcher(%{percentage: 200})
+      end
+    end
+  end
+
   describe "req_headers_match?/2" do
     test "returns true when expected headers is empty list" do
       assert Faultex.Matcher.req_headers_match?([{"a", "1"}], []) == true
