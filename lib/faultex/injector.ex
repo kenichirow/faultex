@@ -151,3 +151,69 @@ defmodule Faultex.Injector.RejectInjector do
     %Faultex.Response{headers: [], body: ""}
   end
 end
+
+defmodule Faultex.Injector.RandomInjector do
+  @type t :: %__MODULE__{
+          id: term(),
+          disable: boolean() | nil,
+          host: String.t() | nil,
+          method: String.t() | nil,
+          path: String.t() | nil,
+          headers: [{String.t(), String.t()}] | nil,
+          percentage: integer() | nil,
+          injectors: [term()]
+        }
+
+  defstruct [
+    :id,
+    :disable,
+    :host,
+    :method,
+    :path,
+    :headers,
+    :percentage,
+    :injectors
+  ]
+
+  @behaviour Faultex.Injector
+
+  @impl Faultex.Injector
+  @spec inject(t()) :: Faultex.Response.t()
+  def inject(%__MODULE__{injectors: injectors}) do
+    injectors |> Enum.random() |> Faultex.inject()
+  end
+end
+
+defmodule Faultex.Injector.ChainInjector do
+  @type t :: %__MODULE__{
+          id: term(),
+          disable: boolean() | nil,
+          host: String.t() | nil,
+          method: String.t() | nil,
+          path: String.t() | nil,
+          headers: [{String.t(), String.t()}] | nil,
+          percentage: integer() | nil,
+          injectors: [term()]
+        }
+
+  defstruct [
+    :id,
+    :disable,
+    :host,
+    :method,
+    :path,
+    :headers,
+    :percentage,
+    :injectors
+  ]
+
+  @behaviour Faultex.Injector
+
+  @impl Faultex.Injector
+  @spec inject(t()) :: Faultex.Response.t()
+  def inject(%__MODULE__{injectors: injectors}) do
+    Enum.reduce(injectors, %Faultex.Response{}, fn inj, _acc ->
+      Faultex.inject(inj)
+    end)
+  end
+end

@@ -136,6 +136,93 @@ defmodule Faultex.PlugTest do
     end
   end
 
+  defmodule RandomRouter do
+    use Faultex.Plug,
+      injectors: [
+        %Faultex.Injector.RandomInjector{
+          path: "/random",
+          method: "GET",
+          percentage: 100,
+          injectors: [
+            %Faultex.Injector.ErrorInjector{resp_status: 500, resp_body: "500"},
+            %Faultex.Injector.ErrorInjector{resp_status: 503, resp_body: "503"}
+          ]
+        }
+      ]
+
+    plug(:match)
+    plug(:dispatch)
+
+    get "/random" do
+      send_resp(conn, 200, "ok")
+    end
+
+    post "/random" do
+      send_resp(conn, 200, "ok")
+    end
+  end
+
+  defmodule ChainRouter do
+    use Faultex.Plug,
+      injectors: [
+        %Faultex.Injector.ChainInjector{
+          path: "/chain",
+          method: "GET",
+          percentage: 100,
+          injectors: [
+            %Faultex.Injector.SlowInjector{resp_delay: 50},
+            %Faultex.Injector.ErrorInjector{resp_status: 503, resp_body: "timeout"}
+          ]
+        }
+      ]
+
+    plug(:match)
+    plug(:dispatch)
+
+    get "/chain" do
+      send_resp(conn, 200, "ok")
+    end
+
+    post "/chain" do
+      send_resp(conn, 200, "ok")
+    end
+  end
+
+  describe "RandomInjector" do
+    test "returns one of the configured error responses when matched" do
+      conn = Plug.Test.conn("GET", "/random")
+      conn = RandomRouter.call(conn, RandomRouter.init(matcher: RandomRouter))
+      assert conn.status in [500, 503]
+    end
+
+    test "returns normal response when not matched" do
+      conn = Plug.Test.conn("POST", "/random")
+      conn = RandomRouter.call(conn, RandomRouter.init(matcher: RandomRouter))
+      assert conn.status == 200
+      assert conn.resp_body == "ok"
+    end
+  end
+
+  describe "ChainInjector" do
+    test "applies delay and returns error response when matched" do
+      conn = Plug.Test.conn("GET", "/chain")
+      start = System.monotonic_time(:millisecond)
+      conn = ChainRouter.call(conn, ChainRouter.init(matcher: ChainRouter))
+      elapsed = System.monotonic_time(:millisecond) - start
+
+      assert conn.status == 503
+      assert conn.resp_body == "timeout"
+      assert elapsed >= 50
+    end
+
+    test "returns normal response when not matched" do
+      conn = Plug.Test.conn("POST", "/chain")
+      conn = ChainRouter.call(conn, ChainRouter.init(matcher: ChainRouter))
+      assert conn.status == 200
+      assert conn.resp_body == "ok"
+    end
+  end
+
   describe "RejectInjector" do
     test "raises FunctionClauseError due to nil status when matched" do
       conn = Plug.Test.conn("GET", "/reject")

@@ -94,6 +94,66 @@ defmodule Faultex.MatcherTest do
     end
   end
 
+  describe "do_build_matcher/1 for RandomInjector" do
+    test "builds RandomInjector with child injectors" do
+      injector = %Faultex.Injector.RandomInjector{
+        path: "/api",
+        injectors: [
+          %Faultex.Injector.ErrorInjector{resp_status: 500},
+          %Faultex.Injector.ErrorInjector{resp_status: 503}
+        ]
+      }
+
+      {matcher, built} = Faultex.Matcher.do_build_matcher(injector)
+      assert %Faultex.Matcher{} = matcher
+      assert %Faultex.Injector.RandomInjector{} = built
+      assert length(built.injectors) == 2
+
+      [first, second] = built.injectors
+      assert %Faultex.Injector.ErrorInjector{resp_status: 500} = first
+      assert %Faultex.Injector.ErrorInjector{resp_status: 503} = second
+    end
+
+    test "raises ArgumentError when injectors is empty" do
+      assert_raise ArgumentError, ~r/injectors/, fn ->
+        Faultex.Matcher.do_build_matcher(%Faultex.Injector.RandomInjector{injectors: []})
+      end
+    end
+
+    test "raises ArgumentError when injectors is nil" do
+      assert_raise ArgumentError, ~r/injectors/, fn ->
+        Faultex.Matcher.do_build_matcher(%Faultex.Injector.RandomInjector{injectors: nil})
+      end
+    end
+  end
+
+  describe "do_build_matcher/1 for ChainInjector" do
+    test "builds ChainInjector with child injectors" do
+      injector = %Faultex.Injector.ChainInjector{
+        path: "/api",
+        injectors: [
+          %Faultex.Injector.SlowInjector{resp_delay: 100},
+          %Faultex.Injector.ErrorInjector{resp_status: 503, resp_body: "timeout"}
+        ]
+      }
+
+      {matcher, built} = Faultex.Matcher.do_build_matcher(injector)
+      assert %Faultex.Matcher{} = matcher
+      assert %Faultex.Injector.ChainInjector{} = built
+      assert length(built.injectors) == 2
+
+      [first, second] = built.injectors
+      assert %Faultex.Injector.SlowInjector{resp_delay: 100} = first
+      assert %Faultex.Injector.ErrorInjector{resp_status: 503} = second
+    end
+
+    test "raises ArgumentError when injectors is empty" do
+      assert_raise ArgumentError, ~r/injectors/, fn ->
+        Faultex.Matcher.do_build_matcher(%Faultex.Injector.ChainInjector{injectors: []})
+      end
+    end
+  end
+
   describe "req_headers_match?/2" do
     test "returns true when expected headers is empty list" do
       assert Faultex.Matcher.req_headers_match?([{"a", "1"}], []) == true
