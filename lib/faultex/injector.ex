@@ -62,15 +62,6 @@ defmodule Faultex.Injector.FaultInjector do
       Process.sleep(resp_delay)
     end
 
-    # if injector.resp_handler != nil do
-    #   {m, f} = injector.resp_handler
-
-    #   %{
-    #     resp_status: resp_status,
-    #     resp_body: resp_body
-    #   } = apply(m, f, [conn.host, conn.method, conn.path_info, conn.request_headers, injector])
-    # %Faultex.Response{status: resp_status, headers: injector.resp_headers body: resp_body}
-
     %Faultex.Response{
       status: injector.resp_status,
       headers: injector.resp_headers,
@@ -83,8 +74,6 @@ defmodule Faultex.Injector.SlowInjector do
   @moduledoc """
   Inject response delay
   """
-
-  @behaviour Faultex.Injector
 
   @type t :: %__MODULE__{
           id: term(),
@@ -107,6 +96,8 @@ defmodule Faultex.Injector.SlowInjector do
     :percentage,
     :resp_delay
   ]
+
+  @behaviour Faultex.Injector
 
   @impl Faultex.Injector
   @spec inject(t()) :: Faultex.Response.t()
@@ -130,17 +121,6 @@ defmodule Faultex.Injector.RejectInjector do
   inject abort with empty response
   """
 
-  defstruct [
-    :id,
-    :disable,
-    :host,
-    :method,
-    :path,
-    :headers,
-    :percentage,
-    :resp_delay
-  ]
-
   @type t :: %__MODULE__{
           id: term(),
           disable: boolean() | nil,
@@ -151,6 +131,17 @@ defmodule Faultex.Injector.RejectInjector do
           percentage: integer() | nil,
           resp_delay: integer() | nil
         }
+
+  defstruct [
+    :id,
+    :disable,
+    :host,
+    :method,
+    :path,
+    :headers,
+    :percentage,
+    :resp_delay
+  ]
 
   @behaviour Faultex.Injector
 
