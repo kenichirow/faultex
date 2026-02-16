@@ -34,7 +34,6 @@ defmodule Faultex.MixProject do
     [
       {:plug, "~> 1.11"},
       {:httpoison, "~> 1.8"},
-      {:jason, "~> 1.2"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: :dev, runtime: false}
     ]

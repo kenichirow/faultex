@@ -161,35 +161,6 @@ defmodule Faultex.Matcher do
     }
   end
 
-  @spec build_path_params_match(list(), list()) :: list()
-  def build_path_params_match(params_matches, []) do
-    params_matches
-  end
-
-  def build_path_params_match(params_matches, [var | rest]) when is_atom(var) do
-    case Atom.to_string(var) do
-      "_" <> _ ->
-        build_path_params_match(params_matches, rest)
-
-      key ->
-        build_path_params_match([{key, {var, [], nil}} | params_matches], rest)
-    end
-  end
-
-  def build_path_params_match(params_matches, [var | rest]) when is_binary(var) do
-    case var do
-      "_" <> _ ->
-        build_path_params_match(params_matches, rest)
-
-      _ ->
-        build_path_params_match([{var, {String.to_atom(var), [], nil}} | params_matches], rest)
-    end
-  end
-
-  def build_path_params_match(params_matches, rest) do
-    build_path_params_match(params_matches, rest)
-  end
-
   @spec build_path_match(String.t()) :: {list(), list()}
   def build_path_match(path_pattern) do
     segments = path_pattern |> split() |> Enum.reverse()
