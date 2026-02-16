@@ -106,10 +106,12 @@ defmodule Faultex.Matcher do
   end
 
   def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.ErrorInjector) do
+    validate_injector!(injector)
+
     resp_body = Map.get(injector, :resp_body) || ""
     resp_status = Map.get(injector, :resp_status) || 200
     resp_headers = Map.get(injector, :resp_headers) || []
-    resp_handler = Map.get(injector, :resp_handler) || nil
+    resp_handler = Map.get(injector, :resp_handler)
     resp_delay = Map.get(injector, :resp_delay) || 0
 
     {
@@ -125,6 +127,8 @@ defmodule Faultex.Matcher do
   end
 
   def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.SlowInjector) do
+    validate_injector!(injector)
+
     {
       fill_matcher_params(injector),
       %Faultex.Injector.SlowInjector{
@@ -134,6 +138,8 @@ defmodule Faultex.Matcher do
   end
 
   def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.RejectInjector) do
+    validate_injector!(injector)
+
     {
       fill_matcher_params(injector),
       %Faultex.Injector.RejectInjector{
@@ -143,10 +149,12 @@ defmodule Faultex.Matcher do
   end
 
   def do_build_matcher(injector) when is_map(injector) do
+    validate_injector!(injector)
+
     resp_body = Map.get(injector, :resp_body) || ""
     resp_status = Map.get(injector, :resp_status) || 200
     resp_headers = Map.get(injector, :resp_headers) || []
-    resp_handler = Map.get(injector, :resp_handler) || nil
+    resp_handler = Map.get(injector, :resp_handler)
     resp_delay = Map.get(injector, :resp_delay) || 0
 
     {
@@ -225,6 +233,36 @@ defmodule Faultex.Matcher do
     Enum.find(clauses, fn({matcher, _injector}) ->
       Faultex.Matcher.req_headers_match?(req_headers, matcher.headers)
     end)
+  end
+
+  defp validate_injector!(injector) do
+    validate_percentage!(Map.get(injector, :percentage))
+    validate_resp_delay!(Map.get(injector, :resp_delay))
+
+    if Map.has_key?(injector, :resp_status) do
+      validate_resp_status!(Map.get(injector, :resp_status))
+    end
+  end
+
+  defp validate_percentage!(nil), do: :ok
+  defp validate_percentage!(v) when is_integer(v) and v >= 0 and v <= 100, do: :ok
+
+  defp validate_percentage!(v) do
+    raise ArgumentError, "percentage must be an integer between 0 and 100, got: #{inspect(v)}"
+  end
+
+  defp validate_resp_delay!(nil), do: :ok
+  defp validate_resp_delay!(v) when is_integer(v) and v >= 0, do: :ok
+
+  defp validate_resp_delay!(v) do
+    raise ArgumentError, "resp_delay must be a non-negative integer, got: #{inspect(v)}"
+  end
+
+  defp validate_resp_status!(nil), do: :ok
+  defp validate_resp_status!(v) when is_integer(v) and v > 0, do: :ok
+
+  defp validate_resp_status!(v) do
+    raise ArgumentError, "resp_status must be a positive integer, got: #{inspect(v)}"
   end
 
   @spec sampled?(integer()) :: boolean()
