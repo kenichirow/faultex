@@ -2,7 +2,7 @@
 
 ![ci](https://github.com/kenichirow/faultex/actions/workflows/main.yml/badge.svg)
 
-Faultex is a simple Elixir fault injection library.
+Faultex is a simple Elixir fault injection library. Inspired by [go-fault](https://github.com/lingrino/go-fault).
 
 ## Installation
 
