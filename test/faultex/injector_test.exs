@@ -76,4 +76,77 @@ defmodule Faultex.InjectorTest do
       assert resp.body == ""
     end
   end
+
+  describe "RandomInjector.inject/1" do
+    test "dispatches RandomInjector correctly" do
+      injector = %Faultex.Injector.RandomInjector{
+        injectors: [
+          %Faultex.Injector.ErrorInjector{resp_status: 500, resp_body: "error"}
+        ]
+      }
+
+      resp = Faultex.inject(injector)
+      assert resp.status == 500
+      assert resp.body == "error"
+    end
+
+    test "randomly selects from injectors" do
+      :rand.seed(:exsss, {1, 2, 3})
+
+      injector = %Faultex.Injector.RandomInjector{
+        injectors: [
+          %Faultex.Injector.ErrorInjector{resp_status: 500, resp_body: "500"},
+          %Faultex.Injector.ErrorInjector{resp_status: 503, resp_body: "503"}
+        ]
+      }
+
+      results = for _ <- 1..20, do: Faultex.Injector.RandomInjector.inject(injector).status
+      assert 500 in results
+      assert 503 in results
+    end
+  end
+
+  describe "ChainInjector.inject/1" do
+    test "dispatches ChainInjector correctly" do
+      injector = %Faultex.Injector.ChainInjector{
+        injectors: [
+          %Faultex.Injector.ErrorInjector{resp_status: 503, resp_body: "timeout"}
+        ]
+      }
+
+      resp = Faultex.inject(injector)
+      assert resp.status == 503
+      assert resp.body == "timeout"
+    end
+
+    test "executes all injectors and returns last response" do
+      injector = %Faultex.Injector.ChainInjector{
+        injectors: [
+          %Faultex.Injector.ErrorInjector{resp_status: 500, resp_body: "first"},
+          %Faultex.Injector.ErrorInjector{resp_status: 503, resp_body: "last"}
+        ]
+      }
+
+      resp = Faultex.Injector.ChainInjector.inject(injector)
+      assert resp.status == 503
+      assert resp.body == "last"
+    end
+
+    test "SlowInjector + ErrorInjector chain applies delay then returns error" do
+      injector = %Faultex.Injector.ChainInjector{
+        injectors: [
+          %Faultex.Injector.SlowInjector{resp_delay: 50},
+          %Faultex.Injector.ErrorInjector{resp_status: 503, resp_body: "timeout"}
+        ]
+      }
+
+      start = System.monotonic_time(:millisecond)
+      resp = Faultex.Injector.ChainInjector.inject(injector)
+      elapsed = System.monotonic_time(:millisecond) - start
+
+      assert elapsed >= 50
+      assert resp.status == 503
+      assert resp.body == "timeout"
+    end
+  end
 end

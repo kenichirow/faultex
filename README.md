@@ -23,6 +23,8 @@ end
 | `Faultex.Injector.ErrorInjector` | Returns an error response immediately | `resp_status`, `resp_body`, `resp_headers`, `resp_delay` |
 | `Faultex.Injector.SlowInjector` | Delays the request, then passes through to the original handler | `resp_delay` |
 | `Faultex.Injector.RejectInjector` | Aborts the connection with an empty response | (none) |
+| `Faultex.Injector.RandomInjector` | Randomly selects one injector from a list to execute | `injectors` |
+| `Faultex.Injector.ChainInjector` | Executes injectors sequentially, returns the last response | `injectors` |
 
 ## Usage: Faultex.Plug
 
@@ -40,6 +42,22 @@ defmodule MyRouter do
       path: "/api/health",
       percentage: 50,
       resp_delay: 2000
+    },
+    %Faultex.Injector.RandomInjector{
+      path: "/api/*/users",
+      percentage: 100,
+      injectors: [
+        %Faultex.Injector.ErrorInjector{resp_status: 500, resp_body: "Internal Server Error"},
+        %Faultex.Injector.ErrorInjector{resp_status: 503, resp_body: "Service Unavailable"}
+      ]
+    },
+    %Faultex.Injector.ChainInjector{
+      path: "/api/*/orders",
+      percentage: 100,
+      injectors: [
+        %Faultex.Injector.SlowInjector{resp_delay: 1000},
+        %Faultex.Injector.ErrorInjector{resp_status: 503, resp_body: "Gateway Timeout"}
+      ]
     }
   ]
 
@@ -111,6 +129,14 @@ All injector types share these parameters for matching incoming requests:
 #### RejectInjector
 
 No additional response parameters. Returns an empty response.
+
+#### RandomInjector
+
+- `injectors` — list of child injectors. One is randomly selected and executed per request. Must be non-empty.
+
+#### ChainInjector
+
+- `injectors` — list of child injectors. All are executed sequentially, and the last injector's response is returned. Useful for combining delay with an error response. Must be non-empty.
 
 ### Global Configuration
 

@@ -14,6 +14,8 @@ defmodule Faultex do
           Faultex.Injector.ErrorInjector.t()
           | Faultex.Injector.SlowInjector.t()
           | Faultex.Injector.RejectInjector.t()
+          | Faultex.Injector.RandomInjector.t()
+          | Faultex.Injector.ChainInjector.t()
         ) :: Faultex.Response.t()
   def inject(%Faultex.Injector.ErrorInjector{} = injector) do
     Faultex.Injector.ErrorInjector.inject(injector)
@@ -25,5 +27,13 @@ defmodule Faultex do
 
   def inject(%Faultex.Injector.RejectInjector{} = injector) do
     Faultex.Injector.RejectInjector.inject(injector)
+  end
+
+  def inject(%Faultex.Injector.RandomInjector{} = injector) do
+    Faultex.Injector.RandomInjector.inject(injector)
+  end
+
+  def inject(%Faultex.Injector.ChainInjector{} = injector) do
+    Faultex.Injector.ChainInjector.inject(injector)
   end
 end

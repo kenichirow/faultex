@@ -7,6 +7,8 @@ defmodule Faultex.Matcher do
           Faultex.Injector.ErrorInjector.t()
           | Faultex.Injector.SlowInjector.t()
           | Faultex.Injector.RejectInjector.t()
+          | Faultex.Injector.RandomInjector.t()
+          | Faultex.Injector.ChainInjector.t()
   @type match_result :: {boolean(), injector() | nil}
 
   @type t :: %__MODULE__{
@@ -68,11 +70,11 @@ defmodule Faultex.Matcher do
   end
 
   defp fill_matcher_params(injector) do
-    path = Map.get(injector, :path, "*")
-    host = Map.get(injector, :host, "*")
-    method = Map.get(injector, :method, "*")
+    path = Map.get(injector, :path) || "*"
+    host = Map.get(injector, :host) || "*"
+    method = Map.get(injector, :method) || "*"
     headers = Map.get(injector, :headers) || []
-    percentage = Map.get(injector, :percentage, 100)
+    percentage = Map.get(injector, :percentage) || 100
     {_, path_match} = build_path_match(path)
     disable = Map.get(injector, :disable) || false
 
@@ -145,6 +147,38 @@ defmodule Faultex.Matcher do
       %Faultex.Injector.RejectInjector{
         resp_delay: Map.get(injector, :resp_delay, 0)
       }
+    }
+  end
+
+  def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.RandomInjector) do
+    validate_injector!(injector)
+    validate_injectors!(injector.injectors)
+
+    built_children =
+      Enum.map(injector.injectors, fn child ->
+        {_matcher, built} = do_build_matcher(child)
+        built
+      end)
+
+    {
+      fill_matcher_params(injector),
+      %Faultex.Injector.RandomInjector{injectors: built_children}
+    }
+  end
+
+  def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.ChainInjector) do
+    validate_injector!(injector)
+    validate_injectors!(injector.injectors)
+
+    built_children =
+      Enum.map(injector.injectors, fn child ->
+        {_matcher, built} = do_build_matcher(child)
+        built
+      end)
+
+    {
+      fill_matcher_params(injector),
+      %Faultex.Injector.ChainInjector{injectors: built_children}
     }
   end
 
@@ -242,6 +276,20 @@ defmodule Faultex.Matcher do
     if Map.has_key?(injector, :resp_status) do
       validate_resp_status!(Map.get(injector, :resp_status))
     end
+  end
+
+  defp validate_injectors!(nil) do
+    raise ArgumentError, "injectors must be a non-empty list"
+  end
+
+  defp validate_injectors!([]) do
+    raise ArgumentError, "injectors must be a non-empty list"
+  end
+
+  defp validate_injectors!(injectors) when is_list(injectors), do: :ok
+
+  defp validate_injectors!(v) do
+    raise ArgumentError, "injectors must be a non-empty list, got: #{inspect(v)}"
   end
 
   defp validate_percentage!(nil), do: :ok
