@@ -60,12 +60,12 @@ defmodule Faultex.Plug do
   @spec match(module(), Plug.Conn.t()) :: Faultex.Matcher.match_result()
   def match(matcher, %Plug.Conn{} = conn) do
     %{
-      host: _host,
+      host: host,
       method: method,
       path_info: path_info,
       req_headers: req_headers
     } = conn
 
-    matcher.match?("*", method, path_info, req_headers)
+    matcher.match?(host, method, path_info, req_headers)
   end
 end

@@ -1,6 +1,28 @@
 defmodule Faultex.PlugTest do
   use ExUnit.Case
 
+  defmodule HostMatchRouter do
+    use Faultex.Plug,
+      injectors: [
+        %{
+          host: "www.example.com",
+          path: "/api/*path",
+          method: "GET",
+          percentage: 100,
+          resp_headers: [],
+          resp_status: 503,
+          resp_body: "service unavailable"
+        }
+      ]
+
+    plug(:match)
+    plug(:dispatch)
+
+    get "/api/health" do
+      send_resp(conn, 200, "ok")
+    end
+  end
+
   defmodule MyRouter do
     use Faultex.Plug,
       injectors: [
@@ -24,6 +46,19 @@ defmodule Faultex.PlugTest do
     post "/auth/test/register" do
       send_resp(conn, 200, "ok")
     end
+  end
+
+  test "host マッチ: 一致する host のリクエストは injector がマッチする" do
+    conn = Plug.Test.conn("GET", "/api/health")
+    conn = HostMatchRouter.call(conn, HostMatchRouter.init(matcher: HostMatchRouter))
+    assert conn.status == 503
+  end
+
+  test "host マッチ: 一致しない host のリクエストはスルーされる" do
+    conn = Plug.Test.conn("GET", "/api/health")
+    conn = %{conn | host: "other.example.com"}
+    conn = HostMatchRouter.call(conn, HostMatchRouter.init(matcher: HostMatchRouter))
+    assert conn.status == 200
   end
 
   test "Faultex.Plug" do

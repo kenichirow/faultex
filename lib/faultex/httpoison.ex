@@ -40,7 +40,7 @@ defmodule Faultex.HTTPoison do
             headers: headers,
             url: url
           }) do
-        req_headers = HTTPoison.process_request_headers(headers)
+        req_headers = process_request_headers(headers)
 
         method =
           case method do
