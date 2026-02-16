@@ -1,6 +1,6 @@
 defmodule Faultex.Api do
   use Faultex.Plug, injectors: [
-    %Faultex.Injector.FaultInjector{
+    %Faultex.Injector.ErrorInjector{
       path: "/example1",
       headers: [{"x-example-fault-inject","true"}],
       resp_body: "request failed"

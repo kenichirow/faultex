@@ -4,7 +4,7 @@ defmodule FaultexTest do
   defmodule Matcher do
     use Faultex,
       injectors: [
-        %Faultex.Injector.FaultInjector{
+        %Faultex.Injector.ErrorInjector{
           host: "*",
           path: "/auth/:id/*path",
           method: "POST",
@@ -27,7 +27,7 @@ defmodule FaultexTest do
   defmodule MultipleMatcher do
     use Faultex,
       injectors: [
-        %Faultex.Injector.FaultInjector{
+        %Faultex.Injector.ErrorInjector{
           host: "*",
           path: "/auth/:id/*path",
           method: "POST",
@@ -37,7 +37,7 @@ defmodule FaultexTest do
           resp_status: 401,
           resp_body: "unauthorized-1"
         },
-        %Faultex.Injector.FaultInjector{
+        %Faultex.Injector.ErrorInjector{
           host: "*",
           path: "/auth/:id/*path",
           method: "POST",
@@ -52,7 +52,7 @@ defmodule FaultexTest do
 
   test "match/4 are compile time match configures" do
     # matches
-    assert {true, %Faultex.Injector.FaultInjector{}} =
+    assert {true, %Faultex.Injector.ErrorInjector{}} =
              Matcher.match?("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "auth-failed"},
                {"content-type", "application/json"}
@@ -93,18 +93,18 @@ defmodule FaultexTest do
 
   test "multiple match selects injector by header" do
     # header auth-failed-1 → unauthorized-1
-    assert {true, %Faultex.Injector.FaultInjector{resp_body: "unauthorized-1"}} =
+    assert {true, %Faultex.Injector.ErrorInjector{resp_body: "unauthorized-1"}} =
              MultipleMatcher.match?("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "auth-failed-1"}
              ])
 
     # header auth-failed-2 → unauthorized-2
-    assert {true, %Faultex.Injector.FaultInjector{resp_body: "unauthorized-2"}} =
+    assert {true, %Faultex.Injector.ErrorInjector{resp_body: "unauthorized-2"}} =
              MultipleMatcher.match?("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "auth-failed-2"}
              ])
 
-    # header がどちらにもマッチしない → {false, nil}
+    # no header matches
     assert {false, nil} =
              MultipleMatcher.match?("*", "POST", ["auth", "test", "register"], [
                {"x-fault-inject", "unknown"}

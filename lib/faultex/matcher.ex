@@ -4,7 +4,7 @@ defmodule Faultex.Matcher do
 
   @type header :: {String.t(), String.t()}
   @type injector ::
-          Faultex.Injector.FaultInjector.t()
+          Faultex.Injector.ErrorInjector.t()
           | Faultex.Injector.SlowInjector.t()
           | Faultex.Injector.RejectInjector.t()
   @type match_result :: {boolean(), injector() | nil}
@@ -47,9 +47,9 @@ defmodule Faultex.Matcher do
 
               {matcher, injector} ->
                 disabled? = Application.get_env(:faultex, :disable, false) || matcher.disable
-                roll = Faultex.Matcher.roll(matcher.percentage)
+                sampled = Faultex.Matcher.sampled?(matcher.percentage)
 
-                if roll and not disabled? do
+                if sampled and not disabled? do
                   {true, injector}
                 else
                   {false, nil}
@@ -105,7 +105,7 @@ defmodule Faultex.Matcher do
     do_build_matcher(Application.fetch_env!(:faultex, injector_id))
   end
 
-  def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.FaultInjector) do
+  def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.ErrorInjector) do
     resp_body = Map.get(injector, :resp_body) || ""
     resp_status = Map.get(injector, :resp_status) || 200
     resp_headers = Map.get(injector, :resp_headers) || []
@@ -114,7 +114,7 @@ defmodule Faultex.Matcher do
 
     {
       fill_matcher_params(injector),
-      %Faultex.Injector.FaultInjector{
+      %Faultex.Injector.ErrorInjector{
         resp_status: resp_status,
         resp_body: resp_body,
         resp_headers: resp_headers,
@@ -151,7 +151,7 @@ defmodule Faultex.Matcher do
 
     {
       fill_matcher_params(injector),
-      %Faultex.Injector.FaultInjector{
+      %Faultex.Injector.ErrorInjector{
         resp_status: resp_status,
         resp_body: resp_body,
         resp_headers: resp_headers,
@@ -227,7 +227,7 @@ defmodule Faultex.Matcher do
     end)
   end
 
-  @spec roll(integer()) :: boolean()
-  def roll(100), do: true
-  def roll(percentage), do: :rand.uniform(100) < percentage
+  @spec sampled?(integer()) :: boolean()
+  def sampled?(100), do: true
+  def sampled?(percentage), do: :rand.uniform(100) < percentage
 end

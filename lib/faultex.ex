@@ -11,12 +11,12 @@ defmodule Faultex do
   end
 
   @spec inject(
-          Faultex.Injector.FaultInjector.t()
+          Faultex.Injector.ErrorInjector.t()
           | Faultex.Injector.SlowInjector.t()
           | Faultex.Injector.RejectInjector.t()
         ) :: Faultex.Response.t()
-  def inject(%Faultex.Injector.FaultInjector{} = injector) do
-    Faultex.Injector.FaultInjector.inject(injector)
+  def inject(%Faultex.Injector.ErrorInjector{} = injector) do
+    Faultex.Injector.ErrorInjector.inject(injector)
   end
 
   def inject(%Faultex.Injector.SlowInjector{} = injector) do

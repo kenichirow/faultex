@@ -12,9 +12,9 @@ defmodule Faultex.Response do
   defstruct [:status, :headers, :body]
 end
 
-defmodule Faultex.Injector.FaultInjector do
+defmodule Faultex.Injector.ErrorInjector do
   @moduledoc """
-  Inject fault response immediately
+  Inject error response immediately
   """
 
   @type t :: %__MODULE__{

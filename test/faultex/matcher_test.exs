@@ -1,0 +1,76 @@
+defmodule Faultex.MatcherTest do
+  use ExUnit.Case
+
+  defmodule TestMatcher do
+    use Faultex,
+      injectors: [
+        %Faultex.Injector.ErrorInjector{
+          host: "*",
+          path: "/api/users",
+          method: "GET",
+          percentage: 100,
+          resp_status: 500,
+          resp_body: "error"
+        }
+      ]
+  end
+
+  describe "catch-all match?/4" do
+    test "returns {false, nil} for unmatched path" do
+      assert {false, nil} = TestMatcher.match?("*", "GET", ["unknown"], [])
+    end
+
+    test "returns {false, nil} for unmatched method" do
+      assert {false, nil} = TestMatcher.match?("*", "DELETE", ["api", "users"], [])
+    end
+  end
+
+  describe "sampled?/1" do
+    test "always returns true for percentage 100" do
+      assert Faultex.Matcher.sampled?(100) == true
+    end
+
+    test "always returns false for percentage 0" do
+      results = for _ <- 1..100, do: Faultex.Matcher.sampled?(0)
+      assert Enum.all?(results, &(&1 == false))
+    end
+
+    test "returns mixed results for intermediate percentage with fixed seed" do
+      :rand.seed(:exsss, {1, 2, 3})
+      results = for _ <- 1..100, do: Faultex.Matcher.sampled?(50)
+      true_count = Enum.count(results, & &1)
+      assert true_count > 0
+      assert true_count < 100
+    end
+  end
+
+  describe "req_headers_match?/2" do
+    test "returns true when expected headers is empty list" do
+      assert Faultex.Matcher.req_headers_match?([{"a", "1"}], []) == true
+    end
+
+    test "returns true when expected headers is nil" do
+      assert Faultex.Matcher.req_headers_match?([{"a", "1"}], nil) == true
+    end
+
+    test "returns true when request contains expected header" do
+      req = [{"content-type", "application/json"}, {"x-fault", "yes"}]
+      assert Faultex.Matcher.req_headers_match?(req, [{"x-fault", "yes"}]) == true
+    end
+
+    test "returns false when request lacks expected header" do
+      req = [{"content-type", "application/json"}]
+      assert Faultex.Matcher.req_headers_match?(req, [{"x-fault", "yes"}]) == false
+    end
+
+    test "returns true when all expected headers are present" do
+      req = [{"a", "1"}, {"b", "2"}, {"c", "3"}]
+      assert Faultex.Matcher.req_headers_match?(req, [{"a", "1"}, {"b", "2"}]) == true
+    end
+
+    test "returns false when any expected header is missing" do
+      req = [{"a", "1"}, {"c", "3"}]
+      assert Faultex.Matcher.req_headers_match?(req, [{"a", "1"}, {"b", "2"}]) == false
+    end
+  end
+end

@@ -2,8 +2,8 @@ defmodule Faultex.InjectorTest do
   use ExUnit.Case
 
   describe "Faultex.inject/1 dispatch" do
-    test "dispatches FaultInjector correctly" do
-      injector = %Faultex.Injector.FaultInjector{
+    test "dispatches ErrorInjector correctly" do
+      injector = %Faultex.Injector.ErrorInjector{
         resp_status: 500,
         resp_headers: [{"x-error", "true"}],
         resp_body: "error"
@@ -26,18 +26,39 @@ defmodule Faultex.InjectorTest do
     end
   end
 
-  describe "FaultInjector.inject/1" do
+  describe "ErrorInjector.inject/1" do
     test "returns Response with configured values" do
-      injector = %Faultex.Injector.FaultInjector{
+      injector = %Faultex.Injector.ErrorInjector{
         resp_status: 403,
         resp_headers: [{"x-reason", "forbidden"}],
         resp_body: "forbidden"
       }
 
-      resp = Faultex.Injector.FaultInjector.inject(injector)
+      resp = Faultex.Injector.ErrorInjector.inject(injector)
       assert resp.status == 403
       assert resp.headers == [{"x-reason", "forbidden"}]
       assert resp.body == "forbidden"
+    end
+
+    test "resp_delay: nil causes no delay" do
+      injector = %Faultex.Injector.ErrorInjector{resp_status: 200, resp_delay: nil}
+      start = System.monotonic_time(:millisecond)
+      _resp = Faultex.Injector.ErrorInjector.inject(injector)
+      assert System.monotonic_time(:millisecond) - start < 50
+    end
+
+    test "resp_delay: 0 causes no delay" do
+      injector = %Faultex.Injector.ErrorInjector{resp_status: 200, resp_delay: 0}
+      start = System.monotonic_time(:millisecond)
+      _resp = Faultex.Injector.ErrorInjector.inject(injector)
+      assert System.monotonic_time(:millisecond) - start < 50
+    end
+
+    test "resp_delay: positive value delays by specified milliseconds" do
+      injector = %Faultex.Injector.ErrorInjector{resp_status: 200, resp_delay: 50}
+      start = System.monotonic_time(:millisecond)
+      _resp = Faultex.Injector.ErrorInjector.inject(injector)
+      assert System.monotonic_time(:millisecond) - start >= 50
     end
   end
 
