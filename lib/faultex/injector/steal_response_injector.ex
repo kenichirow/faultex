@@ -14,23 +14,11 @@ defmodule Faultex.Injector.StealResponseInjector do
           resp_delay: integer() | nil
         }
 
-  defstruct [
-    :id,
-    :disable,
-    :host,
-    :method,
-    :path,
-    :headers,
-    :percentage,
-    :resp_delay
-  ]
+  use Faultex.Injector
+  defstruct @__fields__ ++ [:resp_delay]
 
   @spec inject(t()) :: Faultex.Response.t()
   def inject(_injector) do
     %Faultex.Response{action: :steal}
   end
-end
-
-defimpl Faultex.Injector, for: Faultex.Injector.StealResponseInjector do
-  def inject(injector), do: Faultex.Injector.StealResponseInjector.inject(injector)
 end

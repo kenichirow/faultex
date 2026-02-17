@@ -3,7 +3,7 @@ defmodule Faultex.Matcher do
   """
 
   @type header :: {String.t(), String.t()}
-  @type injector :: Faultex.Injector.t()
+  @type injector :: struct()
   @type match_result :: {boolean(), injector() | nil}
 
   @type t :: %__MODULE__{
