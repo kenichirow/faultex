@@ -3,12 +3,7 @@ defmodule Faultex.Matcher do
   """
 
   @type header :: {String.t(), String.t()}
-  @type injector ::
-          Faultex.Injector.ErrorInjector.t()
-          | Faultex.Injector.SlowInjector.t()
-          | Faultex.Injector.RejectInjector.t()
-          | Faultex.Injector.RandomInjector.t()
-          | Faultex.Injector.ChainInjector.t()
+  @type injector :: Faultex.Injector.t()
   @type match_result :: {boolean(), injector() | nil}
 
   @type t :: %__MODULE__{
@@ -145,6 +140,17 @@ defmodule Faultex.Matcher do
     {
       fill_matcher_params(injector),
       %Faultex.Injector.RejectInjector{
+        resp_delay: Map.get(injector, :resp_delay, 0)
+      }
+    }
+  end
+
+  def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.StealResponseInjector) do
+    validate_injector!(injector)
+
+    {
+      fill_matcher_params(injector),
+      %Faultex.Injector.StealResponseInjector{
         resp_delay: Map.get(injector, :resp_delay, 0)
       }
     }

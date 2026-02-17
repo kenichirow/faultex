@@ -21,14 +21,27 @@ defmodule Faultex.HTTPoison do
           {true, injector} ->
             resp = Faultex.inject(injector)
 
-            {:ok,
-             %HTTPoison.Response{
-               body: resp.body,
-               headers: resp.headers,
-               request: request,
-               request_url: url,
-               status_code: resp.status
-             }}
+            case resp.action do
+              :reject ->
+                {:error, %HTTPoison.Error{reason: :closed}}
+
+              :passthrough ->
+                super(method, url, body, headers, options)
+
+              :response ->
+                {:ok,
+                 %HTTPoison.Response{
+                   body: resp.body,
+                   headers: resp.headers,
+                   request: request,
+                   request_url: url,
+                   status_code: resp.status
+                 }}
+
+              :steal ->
+                _ = super(method, url, body, headers, options)
+                {:error, %HTTPoison.Error{reason: :closed}}
+            end
 
           {false, _} ->
             super(method, url, body, headers, options)

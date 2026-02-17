@@ -25,13 +25,14 @@ defmodule Faultex.Injector.ChainInjector do
     :injectors
   ]
 
-  @behaviour Faultex.Injector
-
-  @impl Faultex.Injector
   @spec inject(t()) :: Faultex.Response.t()
   def inject(%__MODULE__{injectors: injectors}) do
     Enum.reduce(injectors, %Faultex.Response{}, fn inj, _acc ->
       Faultex.inject(inj)
     end)
   end
+end
+
+defimpl Faultex.Injector, for: Faultex.Injector.ChainInjector do
+  def inject(injector), do: Faultex.Injector.ChainInjector.inject(injector)
 end

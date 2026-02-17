@@ -25,22 +25,33 @@ defmodule Faultex.Plug do
     matcher = opts[:matcher]
 
     case match(matcher, conn) do
-      {true, %Faultex.Injector.SlowInjector{} = slow_injector} ->
-        _ = Faultex.inject(slow_injector)
-        conn
-
       {true, injector} ->
-        send_resp_and_halt(conn, injector)
+        resp = Faultex.inject(injector)
+
+        case resp.action do
+          :passthrough ->
+            conn
+
+          :reject ->
+            conn |> Plug.Conn.halt()
+
+          :response ->
+            send_resp_and_halt(conn, resp)
+
+          :steal ->
+            Plug.Conn.register_before_send(conn, fn conn ->
+              Process.exit(self(), :kill)
+              conn
+            end)
+        end
 
       {false, _} ->
         conn
     end
   end
 
-  @spec send_resp_and_halt(Plug.Conn.t(), Faultex.Matcher.injector()) :: Plug.Conn.t()
-  def send_resp_and_halt(conn, injector) do
-    resp = Faultex.inject(injector)
-
+  @spec send_resp_and_halt(Plug.Conn.t(), Faultex.Response.t()) :: Plug.Conn.t()
+  defp send_resp_and_halt(conn, resp) do
     conn
     |> put_resp_headers(resp.headers)
     |> Plug.Conn.send_resp(resp.status, resp.body)
@@ -48,17 +59,17 @@ defmodule Faultex.Plug do
   end
 
   @spec put_resp_headers(Plug.Conn.t(), [{String.t(), String.t()}] | nil) :: Plug.Conn.t()
-  def put_resp_headers(conn, nil), do: conn
-  def put_resp_headers(conn, []), do: conn
+  defp put_resp_headers(conn, nil), do: conn
+  defp put_resp_headers(conn, []), do: conn
 
-  def put_resp_headers(conn, headers) do
+  defp put_resp_headers(conn, headers) do
     Enum.reduce(headers, conn, fn {k, v}, c ->
       Plug.Conn.put_resp_header(c, k, v)
     end)
   end
 
   @spec match(module(), Plug.Conn.t()) :: Faultex.Matcher.match_result()
-  def match(matcher, %Plug.Conn{} = conn) do
+  defp match(matcher, %Plug.Conn{} = conn) do
     %{
       host: host,
       method: method,

@@ -223,13 +223,51 @@ defmodule Faultex.PlugTest do
     end
   end
 
-  describe "RejectInjector" do
-    test "raises FunctionClauseError due to nil status when matched" do
-      conn = Plug.Test.conn("GET", "/reject")
+  defmodule StealRouter do
+    use Faultex.Plug,
+      injectors: [
+        %Faultex.Injector.StealResponseInjector{path: "/steal", method: "GET", percentage: 100}
+      ]
 
-      assert_raise FunctionClauseError, fn ->
-        RejectRouter.call(conn, RejectRouter.init(matcher: RejectRouter))
-      end
+    plug(:match)
+    plug(:dispatch)
+
+    get "/steal" do
+      send_resp(conn, 200, "ok")
+    end
+
+    post "/steal" do
+      send_resp(conn, 200, "ok")
+    end
+  end
+
+  describe "StealResponseInjector" do
+    test "kills process before response is sent when matched" do
+      conn = Plug.Test.conn("GET", "/steal")
+      opts = StealRouter.init(matcher: StealRouter)
+
+      pid =
+        spawn(fn ->
+          StealRouter.call(conn, opts)
+        end)
+
+      ref = Process.monitor(pid)
+      assert_receive {:DOWN, ^ref, :process, ^pid, :killed}, 1000
+    end
+
+    test "returns normal response when not matched" do
+      conn = Plug.Test.conn("POST", "/steal")
+      conn = StealRouter.call(conn, StealRouter.init(matcher: StealRouter))
+      assert conn.status == 200
+    end
+  end
+
+  describe "RejectInjector" do
+    test "halts without sending response when matched" do
+      conn = Plug.Test.conn("GET", "/reject")
+      conn = RejectRouter.call(conn, RejectRouter.init(matcher: RejectRouter))
+      assert conn.halted
+      assert conn.state == :unset
     end
 
     test "returns normal response when not matched" do

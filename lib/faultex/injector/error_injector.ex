@@ -33,9 +33,6 @@ defmodule Faultex.Injector.ErrorInjector do
     :resp_delay
   ]
 
-  @behaviour Faultex.Injector
-
-  @impl Faultex.Injector
   @spec inject(t()) :: Faultex.Response.t()
   def inject(injector) do
     resp_delay =
@@ -49,9 +46,14 @@ defmodule Faultex.Injector.ErrorInjector do
     end
 
     %Faultex.Response{
+      action: :response,
       status: injector.resp_status,
       headers: injector.resp_headers,
       body: injector.resp_body
     }
   end
+end
+
+defimpl Faultex.Injector, for: Faultex.Injector.ErrorInjector do
+  def inject(injector), do: Faultex.Injector.ErrorInjector.inject(injector)
 end

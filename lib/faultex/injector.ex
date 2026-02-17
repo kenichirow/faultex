@@ -1,7 +1,8 @@
-defmodule Faultex.Injector do
+defprotocol Faultex.Injector do
   @moduledoc """
-  Behaviour for fault injectors
+  Protocol for fault injectors
   """
 
-  @callback inject(request :: term()) :: Faultex.Response.t()
+  @spec inject(t) :: Faultex.Response.t()
+  def inject(injector)
 end

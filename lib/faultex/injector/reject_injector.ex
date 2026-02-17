@@ -25,11 +25,12 @@ defmodule Faultex.Injector.RejectInjector do
     :resp_delay
   ]
 
-  @behaviour Faultex.Injector
-
-  @impl Faultex.Injector
   @spec inject(t()) :: Faultex.Response.t()
   def inject(_injector) do
-    %Faultex.Response{headers: [], body: ""}
+    %Faultex.Response{action: :reject, headers: [], body: ""}
   end
+end
+
+defimpl Faultex.Injector, for: Faultex.Injector.RejectInjector do
+  def inject(injector), do: Faultex.Injector.RejectInjector.inject(injector)
 end
