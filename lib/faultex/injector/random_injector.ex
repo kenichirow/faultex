@@ -14,23 +14,10 @@ defmodule Faultex.Injector.RandomInjector do
           injectors: [term()]
         }
 
-  defstruct [
-    :id,
-    :disable,
-    :host,
-    :method,
-    :path,
-    :headers,
-    :percentage,
-    :injectors
-  ]
+  use Faultex.Injector, fields: [:injectors]
 
   @spec inject(t()) :: Faultex.Response.t()
   def inject(%__MODULE__{injectors: injectors}) do
     injectors |> Enum.random() |> Faultex.inject()
   end
-end
-
-defimpl Faultex.Injector, for: Faultex.Injector.RandomInjector do
-  def inject(injector), do: Faultex.Injector.RandomInjector.inject(injector)
 end

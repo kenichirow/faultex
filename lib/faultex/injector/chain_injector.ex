@@ -14,16 +14,7 @@ defmodule Faultex.Injector.ChainInjector do
           injectors: [term()]
         }
 
-  defstruct [
-    :id,
-    :disable,
-    :host,
-    :method,
-    :path,
-    :headers,
-    :percentage,
-    :injectors
-  ]
+  use Faultex.Injector, fields: [:injectors]
 
   @spec inject(t()) :: Faultex.Response.t()
   def inject(%__MODULE__{injectors: injectors}) do
@@ -31,8 +22,4 @@ defmodule Faultex.Injector.ChainInjector do
       Faultex.inject(inj)
     end)
   end
-end
-
-defimpl Faultex.Injector, for: Faultex.Injector.ChainInjector do
-  def inject(injector), do: Faultex.Injector.ChainInjector.inject(injector)
 end

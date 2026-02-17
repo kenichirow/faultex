@@ -14,23 +14,10 @@ defmodule Faultex.Injector.RejectInjector do
           resp_delay: integer() | nil
         }
 
-  defstruct [
-    :id,
-    :disable,
-    :host,
-    :method,
-    :path,
-    :headers,
-    :percentage,
-    :resp_delay
-  ]
+  use Faultex.Injector, fields: [:resp_delay]
 
   @spec inject(t()) :: Faultex.Response.t()
   def inject(_injector) do
     %Faultex.Response{action: :reject, headers: [], body: ""}
   end
-end
-
-defimpl Faultex.Injector, for: Faultex.Injector.RejectInjector do
-  def inject(injector), do: Faultex.Injector.RejectInjector.inject(injector)
 end

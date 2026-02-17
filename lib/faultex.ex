@@ -10,7 +10,7 @@ defmodule Faultex do
     end
   end
 
-  @spec inject(Faultex.Injector.t()) :: Faultex.Response.t()
+  @spec inject(struct()) :: Faultex.Response.t()
   def inject(injector) do
     Faultex.Injector.inject(injector)
   end

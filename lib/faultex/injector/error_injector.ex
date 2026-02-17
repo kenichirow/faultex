@@ -18,20 +18,7 @@ defmodule Faultex.Injector.ErrorInjector do
           resp_delay: integer() | nil
         }
 
-  defstruct [
-    :id,
-    :disable,
-    :host,
-    :method,
-    :path,
-    :headers,
-    :percentage,
-    :resp_status,
-    :resp_headers,
-    :resp_handler,
-    :resp_body,
-    :resp_delay
-  ]
+  use Faultex.Injector, fields: [:resp_status, :resp_headers, :resp_handler, :resp_body, :resp_delay]
 
   @spec inject(t()) :: Faultex.Response.t()
   def inject(injector) do
@@ -52,8 +39,4 @@ defmodule Faultex.Injector.ErrorInjector do
       body: injector.resp_body
     }
   end
-end
-
-defimpl Faultex.Injector, for: Faultex.Injector.ErrorInjector do
-  def inject(injector), do: Faultex.Injector.ErrorInjector.inject(injector)
 end

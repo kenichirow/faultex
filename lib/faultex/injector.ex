@@ -1,8 +1,19 @@
-defprotocol Faultex.Injector do
+defmodule Faultex.Injector do
   @moduledoc """
-  Protocol for fault injectors
+  Common module for fault injectors
   """
 
-  @spec inject(t) :: Faultex.Response.t()
-  def inject(injector)
+  @common_fields [:id, :disable, :host, :method, :path, :headers, :percentage]
+
+  defmacro __using__(opts) do
+    extra_fields = Keyword.get(opts, :fields, [])
+    all_fields = @common_fields ++ extra_fields
+
+    quote do
+      defstruct unquote(all_fields)
+    end
+  end
+
+  @spec inject(struct()) :: Faultex.Response.t()
+  def inject(injector), do: injector.__struct__.inject(injector)
 end

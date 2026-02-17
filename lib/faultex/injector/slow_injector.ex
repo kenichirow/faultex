@@ -14,16 +14,7 @@ defmodule Faultex.Injector.SlowInjector do
           resp_delay: integer() | nil
         }
 
-  defstruct [
-    :id,
-    :disable,
-    :host,
-    :method,
-    :path,
-    :headers,
-    :percentage,
-    :resp_delay
-  ]
+  use Faultex.Injector, fields: [:resp_delay]
 
   @spec inject(t()) :: Faultex.Response.t()
   def inject(injector) do
@@ -39,8 +30,4 @@ defmodule Faultex.Injector.SlowInjector do
 
     %Faultex.Response{action: :passthrough}
   end
-end
-
-defimpl Faultex.Injector, for: Faultex.Injector.SlowInjector do
-  def inject(injector), do: Faultex.Injector.SlowInjector.inject(injector)
 end
