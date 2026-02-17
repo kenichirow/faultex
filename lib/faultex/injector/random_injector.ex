@@ -25,11 +25,12 @@ defmodule Faultex.Injector.RandomInjector do
     :injectors
   ]
 
-  @behaviour Faultex.Injector
-
-  @impl Faultex.Injector
   @spec inject(t()) :: Faultex.Response.t()
   def inject(%__MODULE__{injectors: injectors}) do
     injectors |> Enum.random() |> Faultex.inject()
   end
+end
+
+defimpl Faultex.Injector, for: Faultex.Injector.RandomInjector do
+  def inject(injector), do: Faultex.Injector.RandomInjector.inject(injector)
 end

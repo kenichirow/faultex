@@ -1,6 +1,6 @@
-defmodule Faultex.Injector.SlowInjector do
+defmodule Faultex.Injector.StealResponseInjector do
   @moduledoc """
-  Inject response delay
+  Simulates a stolen response where the server processes the request but the response never reaches the client.
   """
 
   @type t :: %__MODULE__{
@@ -26,21 +26,11 @@ defmodule Faultex.Injector.SlowInjector do
   ]
 
   @spec inject(t()) :: Faultex.Response.t()
-  def inject(injector) do
-    resp_delay =
-      case Map.get(injector, :resp_delay) do
-        nil -> 0
-        delay -> delay
-      end
-
-    if resp_delay != 0 do
-      Process.sleep(resp_delay)
-    end
-
-    %Faultex.Response{action: :passthrough}
+  def inject(_injector) do
+    %Faultex.Response{action: :steal}
   end
 end
 
-defimpl Faultex.Injector, for: Faultex.Injector.SlowInjector do
-  def inject(injector), do: Faultex.Injector.SlowInjector.inject(injector)
+defimpl Faultex.Injector, for: Faultex.Injector.StealResponseInjector do
+  def inject(injector), do: Faultex.Injector.StealResponseInjector.inject(injector)
 end

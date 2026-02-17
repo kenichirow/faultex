@@ -3,11 +3,14 @@ defmodule Faultex.Response do
   Response struct returned by injectors
   """
 
+  @type action :: :response | :passthrough | :reject | :steal
+
   @type t :: %__MODULE__{
+          action: action(),
           status: integer() | nil,
           headers: [{String.t(), String.t()}] | nil,
           body: String.t() | nil
         }
 
-  defstruct [:status, :headers, :body]
+  defstruct [:action, :status, :headers, :body]
 end

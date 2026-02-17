@@ -18,6 +18,45 @@ defmodule Faultex.HTTPoisonTest do
       ]
   end
 
+  defmodule MyApp.RejectHTTPoison do
+    use Faultex.HTTPoison,
+      injectors: [
+        %Faultex.Injector.RejectInjector{
+          host: "reject.example.com",
+          path: "/api",
+          method: "GET",
+          percentage: 100
+        }
+      ]
+  end
+
+  defmodule MyApp.StealHTTPoison do
+    use Faultex.HTTPoison,
+      injectors: [
+        %Faultex.Injector.StealResponseInjector{
+          host: "github.com",
+          path: "/steal",
+          method: "GET",
+          percentage: 100
+        }
+      ]
+  end
+
+  test "StealResponseInjector sends request then returns error with reason :closed" do
+    {:error, %HTTPoison.Error{reason: :closed}} =
+      MyApp.StealHTTPoison.get("https://github.com/steal")
+  end
+
+  test "StealResponseInjector passes through when not matched" do
+    {:ok, res} = MyApp.StealHTTPoison.get("https://github.com/")
+    assert res.status_code == 200
+  end
+
+  test "RejectInjector returns error with reason :closed" do
+    {:error, %HTTPoison.Error{reason: :closed}} =
+      MyApp.RejectHTTPoison.get("https://reject.example.com/api")
+  end
+
   test "Request to remote server" do
     {:ok, res} = MyApp.HTTPoison.get("https://github.com/", [])
     assert res.status_code == 200
