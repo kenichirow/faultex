@@ -3,11 +3,11 @@ defmodule Faultex.Injector do
   Common module for fault injectors
   """
 
-  @common_fields [:id, :disable, :host, :method, :path, :headers, :percentage]
+  @base_fields [:id, :disable, :host, :method, :path, :headers, :percentage]
 
   defmacro __using__(opts) do
     extra_fields = Keyword.get(opts, :fields, [])
-    all_fields = @common_fields ++ extra_fields
+    all_fields = @base_fields ++ extra_fields
 
     quote do
       defstruct unquote(all_fields)
