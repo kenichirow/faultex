@@ -1,6 +1,6 @@
 defmodule Faultex.Injector.RejectInjector do
   @moduledoc """
-  inject abort with empty response
+  Inject abort with empty response
   """
 
   @type t :: %__MODULE__{

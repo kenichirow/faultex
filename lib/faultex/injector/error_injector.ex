@@ -13,13 +13,12 @@ defmodule Faultex.Injector.ErrorInjector do
           percentage: integer() | nil,
           resp_status: integer() | nil,
           resp_headers: [{String.t(), String.t()}] | nil,
-          resp_handler: term(),
           resp_body: String.t() | nil,
           resp_delay: integer() | nil
         }
 
   use Faultex.Injector
-  defstruct @__fields__ ++ [:resp_status, :resp_headers, :resp_handler, :resp_body, :resp_delay]
+  defstruct @__fields__ ++ [:resp_status, :resp_headers, :resp_body, :resp_delay]
 
   @spec inject(t()) :: Faultex.Response.t()
   def inject(injector) do

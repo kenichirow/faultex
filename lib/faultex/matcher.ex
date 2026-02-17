@@ -102,27 +102,6 @@ defmodule Faultex.Matcher do
     do_build_matcher(Application.fetch_env!(:faultex, injector_id))
   end
 
-  def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.ErrorInjector) do
-    validate_injector!(injector)
-
-    resp_body = Map.get(injector, :resp_body) || ""
-    resp_status = Map.get(injector, :resp_status) || 200
-    resp_headers = Map.get(injector, :resp_headers) || []
-    resp_handler = Map.get(injector, :resp_handler)
-    resp_delay = Map.get(injector, :resp_delay) || 0
-
-    {
-      fill_matcher_params(injector),
-      %Faultex.Injector.ErrorInjector{
-        resp_status: resp_status,
-        resp_body: resp_body,
-        resp_headers: resp_headers,
-        resp_delay: resp_delay,
-        resp_handler: resp_handler
-      }
-    }
-  end
-
   def do_build_matcher(injector) when is_struct(injector, Faultex.Injector.SlowInjector) do
     validate_injector!(injector)
 
@@ -194,7 +173,6 @@ defmodule Faultex.Matcher do
     resp_body = Map.get(injector, :resp_body) || ""
     resp_status = Map.get(injector, :resp_status) || 200
     resp_headers = Map.get(injector, :resp_headers) || []
-    resp_handler = Map.get(injector, :resp_handler)
     resp_delay = Map.get(injector, :resp_delay) || 0
 
     {
@@ -203,8 +181,7 @@ defmodule Faultex.Matcher do
         resp_status: resp_status,
         resp_body: resp_body,
         resp_headers: resp_headers,
-        resp_delay: resp_delay,
-        resp_handler: resp_handler
+        resp_delay: resp_delay
       }
     }
   end
