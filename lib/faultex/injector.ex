@@ -5,11 +5,11 @@ defmodule Faultex.Injector do
 
   @__fields__ [:id, :disable, :host, :method, :path, :headers, :percentage]
 
-  defmacro __using__(opts) do
-    fields = @__fields__ ++ Keyword.get(opts, :fields, [])
+  defmacro __using__(_) do
+    fields = @__fields__
 
     quote do
-      defstruct unquote(fields)
+      @__fields__ unquote(fields)
     end
   end
 

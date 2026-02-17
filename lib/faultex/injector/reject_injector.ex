@@ -14,7 +14,8 @@ defmodule Faultex.Injector.RejectInjector do
           resp_delay: integer() | nil
         }
 
-  use Faultex.Injector, fields: [:resp_delay]
+  use Faultex.Injector
+  defstruct @__fields__ ++ [:resp_delay]
 
   @spec inject(t()) :: Faultex.Response.t()
   def inject(_injector) do

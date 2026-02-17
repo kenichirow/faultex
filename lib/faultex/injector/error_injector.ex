@@ -18,7 +18,8 @@ defmodule Faultex.Injector.ErrorInjector do
           resp_delay: integer() | nil
         }
 
-  use Faultex.Injector, fields: [:resp_status, :resp_headers, :resp_handler, :resp_body, :resp_delay]
+  use Faultex.Injector
+  defstruct @__fields__ ++ [:resp_status, :resp_headers, :resp_handler, :resp_body, :resp_delay]
 
   @spec inject(t()) :: Faultex.Response.t()
   def inject(injector) do

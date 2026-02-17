@@ -14,7 +14,8 @@ defmodule Faultex.Injector.ChainInjector do
           injectors: [term()]
         }
 
-  use Faultex.Injector, fields: [:injectors]
+  use Faultex.Injector
+  defstruct @__fields__ ++ [:injectors]
 
   @spec inject(t()) :: Faultex.Response.t()
   def inject(%__MODULE__{injectors: injectors}) do
