@@ -1,4 +1,9 @@
 defmodule Faultex.HTTPoison do
+  @moduledoc """
+  HTTPoison wrapper that intercepts requests matching injector rules and
+  returns injected responses instead of making real HTTP calls.
+  """
+
   defmacro __using__(opts) do
     quote do
       @matcher __MODULE__
@@ -55,16 +60,7 @@ defmodule Faultex.HTTPoison do
           }) do
         req_headers = process_request_headers(headers)
 
-        method =
-          case method do
-            method when is_atom(method) ->
-              Atom.to_string(method)
-
-            method ->
-              method
-          end
-
-        method = method |> String.upcase() |> to_string()
+        method = method |> to_string() |> String.upcase()
         %{host: host, path: path} = url |> URI.parse()
 
         path_info =
