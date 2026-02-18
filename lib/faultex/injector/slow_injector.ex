@@ -1,6 +1,9 @@
 defmodule Faultex.Injector.SlowInjector do
   @moduledoc """
-  Inject response delay
+  Inject response delay.
+
+  Sleeps for `resp_delay` milliseconds, then passes through to the original
+  handler (Plug pipeline or HTTPoison request) without modifying the response.
   """
 
   @type t :: %__MODULE__{

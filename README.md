@@ -149,6 +149,4 @@ Application.put_env(:faultex, :disable, true)
 ## TODO
 
 - [ ] Allow `:exact` key
-- [ ] Pass path parameters to resp_handler
 - [ ] Debug log
-- [ ] RejectInjector
