@@ -298,5 +298,9 @@ defmodule Faultex.Matcher do
 
   @spec sampled?(integer()) :: boolean()
   def sampled?(100), do: true
-  def sampled?(percentage), do: :rand.uniform(100) < percentage
+
+  def sampled?(percentage) do
+    rand_fn = Application.get_env(:faultex, :rand_uniform, &:rand.uniform/1)
+    rand_fn.(100) < percentage
+  end
 end

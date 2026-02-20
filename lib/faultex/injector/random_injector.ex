@@ -19,6 +19,8 @@ defmodule Faultex.Injector.RandomInjector do
 
   @spec inject(t()) :: Faultex.Response.t()
   def inject(%__MODULE__{injectors: injectors}) do
-    injectors |> Enum.random() |> Faultex.inject()
+    rand_fn = Application.get_env(:faultex, :rand_uniform, &:rand.uniform/1)
+    index = rand_fn.(length(injectors)) - 1
+    injectors |> Enum.at(index) |> Faultex.inject()
   end
 end
