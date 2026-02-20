@@ -12,6 +12,13 @@ defmodule Faultex do
 
   @spec inject(struct()) :: Faultex.Response.t()
   def inject(injector) do
-    Faultex.Injector.inject(injector)
+    resp = Faultex.Injector.inject(injector)
+
+    case Application.get_env(:faultex, :reporter) do
+      nil -> :ok
+      reporter -> reporter.report(:injected, injector, %{response: resp})
+    end
+
+    resp
   end
 end
