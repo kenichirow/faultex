@@ -22,15 +22,7 @@ defmodule Faultex.Injector.SlowInjector do
 
   @spec inject(t()) :: Faultex.Response.t()
   def inject(injector) do
-    resp_delay =
-      case Map.get(injector, :resp_delay) do
-        nil -> 0
-        delay -> delay
-      end
-
-    if resp_delay != 0 do
-      Process.sleep(resp_delay)
-    end
+    Faultex.Injector.apply_delay(injector)
 
     %Faultex.Response{action: :passthrough}
   end

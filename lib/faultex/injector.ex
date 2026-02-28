@@ -15,4 +15,16 @@ defmodule Faultex.Injector do
 
   @spec inject(struct()) :: Faultex.Response.t()
   def inject(injector), do: injector.__struct__.inject(injector)
+
+  @doc """
+  Applies the configured delay before returning.
+  """
+  @spec apply_delay(struct()) :: :ok
+  def apply_delay(injector) do
+    case Map.get(injector, :resp_delay) do
+      nil -> :ok
+      0 -> :ok
+      delay when is_integer(delay) and delay > 0 -> Process.sleep(delay)
+    end
+  end
 end

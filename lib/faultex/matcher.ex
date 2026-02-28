@@ -1,5 +1,16 @@
 defmodule Faultex.Matcher do
   @moduledoc """
+  Compile-time matcher generation for fault injection rules.
+
+  At compile time (`@before_compile`), this module reads the configured
+  injectors and generates optimized `match?/4` function clauses that
+  pattern-match on host, method, and path segments. At runtime, incoming
+  requests are dispatched to these generated functions.
+
+  Path patterns support:
+    * Literal segments — `"api"`, `"users"`
+    * `:param` segments — match any single segment
+    * `*wildcard` segments — match any single segment
   """
 
   @type header :: {String.t(), String.t()}
