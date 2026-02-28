@@ -216,13 +216,11 @@ defmodule Faultex.Matcher do
   end
 
   def process_segment(vars, path_match, ["*" <> seg | rest]) do
-    key = String.to_atom(seg)
-    process_segment([key | vars], [{:_, [], nil} | path_match], rest)
+    process_segment([seg | vars], [{:_, [], nil} | path_match], rest)
   end
 
   def process_segment(vars, path_match, [":" <> seg | rest]) do
-    key = String.to_atom(seg)
-    process_segment([key | vars], [{:_, [], nil} | path_match], rest)
+    process_segment([seg | vars], [{:_, [], nil} | path_match], rest)
   end
 
   def process_segment(vars, path_match, [seg | rest]) do
