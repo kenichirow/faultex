@@ -92,6 +92,12 @@ defmodule Faultex.MatcherTest do
         Faultex.Matcher.do_build_matcher(%{percentage: 200})
       end
     end
+
+    test "raises ArgumentError for plain map with unknown keys" do
+      assert_raise ArgumentError, ~r/unknown injector keys/, fn ->
+        Faultex.Matcher.do_build_matcher(%{resp_statsu: 500})
+      end
+    end
   end
 
   describe "do_build_matcher/1 for RandomInjector" do
@@ -181,6 +187,33 @@ defmodule Faultex.MatcherTest do
     test "returns false when any expected header is missing" do
       req = [{"a", "1"}, {"c", "3"}]
       assert Faultex.Matcher.req_headers_match?(req, [{"a", "1"}, {"b", "2"}]) == false
+    end
+
+    test "matches with duplicate header names in request" do
+      req = [{"x-fault", "yes"}, {"x-fault", "no"}]
+      assert Faultex.Matcher.req_headers_match?(req, [{"x-fault", "yes"}]) == true
+    end
+
+    test "does not match when duplicate header has wrong value" do
+      req = [{"x-fault", "no"}, {"x-fault", "maybe"}]
+      assert Faultex.Matcher.req_headers_match?(req, [{"x-fault", "yes"}]) == false
+    end
+  end
+
+  describe "build_path_match/1 edge cases" do
+    test "handles path with double slashes" do
+      {_vars, path_match} = Faultex.Matcher.build_path_match("/api//users")
+      assert path_match == ["api", "users"]
+    end
+
+    test "handles root path" do
+      {_vars, path_match} = Faultex.Matcher.build_path_match("/")
+      assert path_match == []
+    end
+
+    test "handles wildcard-only path" do
+      {_vars, path_match} = Faultex.Matcher.build_path_match("*")
+      assert path_match == [{:_, [], nil}]
     end
   end
 end
