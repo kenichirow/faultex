@@ -178,8 +178,12 @@ defmodule Faultex.Matcher do
     }
   end
 
+  @valid_map_keys ~w(id disable host method path headers percentage
+                     resp_status resp_headers resp_body resp_delay exact)a
+
   def do_build_matcher(injector) when is_map(injector) do
     validate_injector!(injector)
+    validate_map_keys!(injector)
 
     resp_body = Map.get(injector, :resp_body) || ""
     resp_status = Map.get(injector, :resp_status) || 200
@@ -303,6 +307,13 @@ defmodule Faultex.Matcher do
 
   defp validate_resp_status!(v) do
     raise ArgumentError, "resp_status must be a positive integer, got: #{inspect(v)}"
+  end
+
+  defp validate_map_keys!(injector) do
+    unknown = Map.keys(injector) -- @valid_map_keys
+    if unknown != [] do
+      raise ArgumentError, "unknown injector keys: #{inspect(unknown)}"
+    end
   end
 
   @spec sampled?(integer()) :: boolean()

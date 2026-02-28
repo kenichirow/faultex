@@ -11,7 +11,7 @@ Add `:faultex` to your project's `mix.exs`:
 ```elixir
 defp deps do
   [
-    {:faultex, "~> 0.1"}
+    {:faultex, "~> 0.0.2"}
   ]
 end
 ```
