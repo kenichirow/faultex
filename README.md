@@ -146,7 +146,35 @@ You can disable all injectors at runtime via application config:
 Application.put_env(:faultex, :disable, true)
 ```
 
+### Reporter
+
+Faultex reports injection events through a `Faultex.Reporter` behaviour. The default reporter logs events at debug level using Elixir's Logger.
+
+Events reported:
+- `:started` — when an injector is matched and begins execution
+- `:finished` — when an injector completes execution
+- `:skipped` — when no injector matches a request
+
+#### Custom Reporter
+
+Implement the `Faultex.Reporter` behaviour and configure it:
+
+```elixir
+defmodule MyApp.MetricsReporter do
+  @behaviour Faultex.Reporter
+
+  @impl true
+  def report(name, state) do
+    MyApp.Metrics.increment("faultex.#{state}", tags: [name: name])
+    :ok
+  end
+end
+```
+
+```elixir
+config :faultex, reporter: MyApp.MetricsReporter
+```
+
 ## TODO
 
-- [ ] Allow `:exact` key
-- [ ] Debug log
+- [x] Debug log (Reporter behaviour)

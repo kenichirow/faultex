@@ -23,10 +23,14 @@ defmodule Faultex.Plug do
   @spec call(Plug.Conn.t(), Keyword.t()) :: Plug.Conn.t()
   def call(conn, opts) do
     matcher = opts[:matcher]
+    request_name = "#{conn.method} /#{Enum.join(conn.path_info, "/")}"
 
     case match(matcher, conn) do
       {true, injector} ->
+        injector_name = "#{inspect(injector.__struct__)} #{request_name}"
+        Faultex.Reporter.report(injector_name, :started)
         resp = Faultex.inject(injector)
+        Faultex.Reporter.report(injector_name, :finished)
 
         case resp.action do
           :passthrough ->
@@ -46,6 +50,7 @@ defmodule Faultex.Plug do
         end
 
       {false, _} ->
+        Faultex.Reporter.report(request_name, :skipped)
         conn
     end
   end

@@ -277,4 +277,32 @@ defmodule Faultex.PlugTest do
       assert conn.resp_body == "ok"
     end
   end
+
+  describe "Reporter integration" do
+    import ExUnit.CaptureLog
+
+    test "reports started and finished for matched request" do
+      conn = Plug.Test.conn("GET", "/slow")
+
+      log =
+        capture_log([level: :debug], fn ->
+          SlowRouter.call(conn, SlowRouter.init(matcher: SlowRouter))
+        end)
+
+      assert log =~ "started"
+      assert log =~ "finished"
+      assert log =~ "SlowInjector"
+    end
+
+    test "reports skipped for unmatched request" do
+      conn = Plug.Test.conn("POST", "/slow")
+
+      log =
+        capture_log([level: :debug], fn ->
+          SlowRouter.call(conn, SlowRouter.init(matcher: SlowRouter))
+        end)
+
+      assert log =~ "skipped"
+    end
+  end
 end
