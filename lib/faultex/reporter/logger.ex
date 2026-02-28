@@ -7,8 +7,11 @@ defmodule Faultex.Reporter.Logger do
   require Logger
 
   @impl true
-  def report(name, state) do
-    Logger.debug(fn -> "Faultex: #{name} #{state}" end)
+  def report(%{state: state, injector: injector, method: method, path: path}) do
+    Logger.debug(fn ->
+      "Faultex: #{inspect(injector)} #{method} #{path} #{state}"
+    end)
+
     :ok
   end
 end

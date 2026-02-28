@@ -22,14 +22,17 @@ defmodule Faultex.HTTPoison do
           url: url
         }
 
-        request_name = "#{method} #{url}"
-
         case match(request) do
           {true, injector} ->
-            injector_name = "#{inspect(injector.__struct__)} #{request_name}"
-            Faultex.Reporter.report(injector_name, :started)
+            event = %{
+              injector: injector.__struct__,
+              method: to_string(method),
+              path: url
+            }
+
+            Faultex.Reporter.report(Map.put(event, :state, :started))
             resp = Faultex.inject(injector)
-            Faultex.Reporter.report(injector_name, :finished)
+            Faultex.Reporter.report(Map.put(event, :state, :finished))
 
             case resp.action do
               :reject ->
@@ -54,7 +57,6 @@ defmodule Faultex.HTTPoison do
             end
 
           {false, _} ->
-            Faultex.Reporter.report(request_name, :skipped)
             super(method, url, body, headers, options)
         end
       end

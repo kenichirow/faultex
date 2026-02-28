@@ -150,10 +150,13 @@ Application.put_env(:faultex, :disable, true)
 
 Faultex reports injection events through a `Faultex.Reporter` behaviour. The default reporter logs events at debug level using Elixir's Logger.
 
-Events reported:
-- `:started` — when an injector is matched and begins execution
-- `:finished` — when an injector completes execution
-- `:skipped` — when no injector matches a request
+Each event is a map with the following fields:
+- `state` — `:started` or `:finished`
+- `injector` — the injector module (e.g. `Faultex.Injector.ErrorInjector`)
+- `method` — HTTP method (e.g. `"GET"`)
+- `path` — request path (e.g. `"/api/users"`)
+
+Reporter exceptions are automatically rescued to prevent reporting failures from breaking request processing.
 
 #### Custom Reporter
 
@@ -164,8 +167,10 @@ defmodule MyApp.MetricsReporter do
   @behaviour Faultex.Reporter
 
   @impl true
-  def report(name, state) do
-    MyApp.Metrics.increment("faultex.#{state}", tags: [name: name])
+  def report(%{state: state, injector: injector, method: method, path: path}) do
+    MyApp.Metrics.increment("faultex.#{state}",
+      tags: [injector: inspect(injector), method: method, path: path]
+    )
     :ok
   end
 end

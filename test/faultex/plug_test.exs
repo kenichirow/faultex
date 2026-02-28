@@ -294,7 +294,7 @@ defmodule Faultex.PlugTest do
       assert log =~ "SlowInjector"
     end
 
-    test "reports skipped for unmatched request" do
+    test "does not report for unmatched request" do
       conn = Plug.Test.conn("POST", "/slow")
 
       log =
@@ -302,7 +302,7 @@ defmodule Faultex.PlugTest do
           SlowRouter.call(conn, SlowRouter.init(matcher: SlowRouter))
         end)
 
-      assert log =~ "skipped"
+      refute log =~ "Faultex:"
     end
   end
 end
