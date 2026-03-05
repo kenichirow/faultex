@@ -170,6 +170,26 @@ defmodule Faultex.PropertyTest do
     end
   end
 
+  describe "sampled?/1 with custom RNG" do
+    setup do
+      on_exit(fn -> Application.delete_env(:faultex, :rand_uniform) end)
+    end
+
+    property "custom RNG returning value < percentage always yields true" do
+      check all p <- integer(1..100) do
+        Application.put_env(:faultex, :rand_uniform, fn _max -> p - 1 end)
+        assert Faultex.Matcher.sampled?(p) == true
+      end
+    end
+
+    property "custom RNG returning value >= percentage always yields false" do
+      check all p <- integer(0..99) do
+        Application.put_env(:faultex, :rand_uniform, fn _max -> p end)
+        assert Faultex.Matcher.sampled?(p) == false
+      end
+    end
+  end
+
   describe "do_build_matcher/1" do
     property "built ErrorInjector always has non-nil response fields" do
       check all status <- one_of([constant(nil), positive_integer()]),

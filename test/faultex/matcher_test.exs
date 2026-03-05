@@ -42,6 +42,26 @@ defmodule Faultex.MatcherTest do
       assert true_count > 0
       assert true_count < 100
     end
+
+    test "uses custom RNG from Application env" do
+      Application.put_env(:faultex, :rand_uniform, fn _max -> 50 end)
+      on_exit(fn -> Application.delete_env(:faultex, :rand_uniform) end)
+
+      assert Faultex.Matcher.sampled?(51) == true
+      assert Faultex.Matcher.sampled?(50) == false
+    end
+
+    test "percentage 100 bypasses custom RNG" do
+      Application.put_env(:faultex, :rand_uniform, fn _max -> 100 end)
+      on_exit(fn -> Application.delete_env(:faultex, :rand_uniform) end)
+
+      assert Faultex.Matcher.sampled?(100) == true
+    end
+
+    test "falls back to :rand.uniform/1 when not configured" do
+      Application.delete_env(:faultex, :rand_uniform)
+      assert is_boolean(Faultex.Matcher.sampled?(50))
+    end
   end
 
   describe "validate_injector!/1" do

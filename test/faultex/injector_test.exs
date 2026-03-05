@@ -104,6 +104,38 @@ defmodule Faultex.InjectorTest do
       assert 500 in results
       assert 503 in results
     end
+
+    test "custom RNG selects first injector" do
+      Application.put_env(:faultex, :rand_uniform, fn _max -> 1 end)
+      on_exit(fn -> Application.delete_env(:faultex, :rand_uniform) end)
+
+      injector = %Faultex.Injector.RandomInjector{
+        injectors: [
+          %Faultex.Injector.ErrorInjector{resp_status: 500, resp_body: "first"},
+          %Faultex.Injector.ErrorInjector{resp_status: 503, resp_body: "second"}
+        ]
+      }
+
+      resp = Faultex.Injector.RandomInjector.inject(injector)
+      assert resp.status == 500
+      assert resp.body == "first"
+    end
+
+    test "custom RNG selects last injector" do
+      Application.put_env(:faultex, :rand_uniform, fn max -> max end)
+      on_exit(fn -> Application.delete_env(:faultex, :rand_uniform) end)
+
+      injector = %Faultex.Injector.RandomInjector{
+        injectors: [
+          %Faultex.Injector.ErrorInjector{resp_status: 500, resp_body: "first"},
+          %Faultex.Injector.ErrorInjector{resp_status: 503, resp_body: "second"}
+        ]
+      }
+
+      resp = Faultex.Injector.RandomInjector.inject(injector)
+      assert resp.status == 503
+      assert resp.body == "second"
+    end
   end
 
   describe "ChainInjector.inject/1" do
